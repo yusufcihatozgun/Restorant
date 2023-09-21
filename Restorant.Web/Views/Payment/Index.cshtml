@@ -1,0 +1,395 @@
+﻿@using System.Security.Claims;
+
+<input type="hidden" id="userId" value="@User.FindFirstValue(ClaimTypes.NameIdentifier)" />
+
+<head>
+    <title>Kasa</title>
+</head>
+
+<partial name="~/Views/Payment/Partials/_PaymentModal.cshtml" />
+<partial name="~/Views/Payment/Partials/_DivideModal.cshtml" />
+
+<div class="container-fluid">
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+
+                <div style="width:30%;" class="accordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne">
+                            <button class="accordion-button collapsed bg-info" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                <strong>Kasa</strong>
+                            </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                            <div class="accordion-body">
+                                <div class="row">
+                                    <p>Kasa Nakit : <strong id="totalCashPaymentAmounts"></strong> </p>
+                                </div>
+                                <div class="row">
+                                    <p>Kasa Kredi Kartı : <strong id="totalCardPaymentAmounts"></strong></p>
+                                </div>
+                                <div class="row">
+                                    <p>Kasa Ticket : <strong id="totalTicketPaymentAmounts"></strong></p>
+                                </div>
+                                <div class="row">
+                                    <p>Kasa Toplam : <strong id="totalPaymentAmounts"></strong></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+    <div class="row" id="tableContainer">
+        <!--- masalar bu alana yerleştirilecek --->
+    </div>
+
+</div>
+
+@section Scripts{
+    <script>
+        var orderId = "";
+
+        $(document).ready(function () {
+            fillTables();
+            Waves.init();
+            setMaxAmountValidation();
+            fillEndOfTheDay();
+        });
+
+        function fillEndOfTheDay() {
+            $.ajax({
+                type: "Get",
+                url: "/Payment/EndOfTheDay",
+                success: function (res) {
+
+                    res.forEach(function (payment) {
+                        var name = payment.name;
+                        var amount = payment.amount;
+                        $(`#${name}`).text(amount + " TL");
+                    });
+                }
+            })
+        }
+
+        function setMaxAmountValidation() {
+            $("#amountToBeCharged").off().on("input", function () {
+                var totalBalanceInput = $("#totalBalance");
+                var maxAmount = parseFloat(totalBalanceInput.val());
+
+                var enteredValue = parseFloat($(this).val());
+
+                if (enteredValue >= maxAmount) {
+                    $(this).val(maxAmount);
+                }
+            });
+
+        }
+
+        function assignFunctionToButtons(orderId, id) {
+            var text = "";
+            var currentText = "";
+
+            $(".btnNumber").off("click").on("click", function () {
+                text = $(this).text();
+                currentText = $("#amountToBeCharged").val();
+
+
+                if (text === ",") {
+                    if (currentText.includes(",")) {
+                        return;
+                    } else if (currentText === "") {
+                        currentText = "0" + text;
+                        $("#amountToBeCharged").val(currentText);
+
+                    } else {
+                        currentText += text;
+                        $("#amountToBeCharged").val(currentText);
+                    }
+                } else {
+                    currentText += text;
+
+                    if (parseFloat(currentText) > parseFloat($("#totalBalance").val())) {
+                        $("#amountToBeCharged").val(parseFloat($("#totalBalance").val()));
+                    } else {
+                        $("#amountToBeCharged").val(currentText);
+                    }
+                }
+            });
+
+            $(".btnDelete").on("click", function () {
+                $("#amountToBeCharged").val("");
+            });
+
+            $(".btnPay").off("click").on("click", function () {
+                var amountToBeCharged = $("#amountToBeCharged").val();
+
+                if (amountToBeCharged !== "" || parseFloat(amountToBeCharged) !== 0 || !isNaN(parseFloat(amountToBeCharged))) {
+                    var paymentType = "";
+
+                    if ($(this).text() === "Nakit") {
+                        paymentType = "Nakit";
+
+                    } else if ($(this).text() === "Kredi Kartı") {
+                        paymentType = "Kredi Kartı";
+
+                    } else if ($(this).text() === "Yemek Çeki") {
+                        paymentType = "Yemek Çeki";
+
+                    }
+                    $.ajax({
+                        type: "POST",
+                        url: "/Payment/Create",
+                        data:
+                        {
+                            amount: $("#amountToBeCharged").val(),
+                            paymentType: paymentType,
+                            orderId: orderId
+                        },
+                        success: function (res) {
+                            fillTotalBalance(orderId);
+                            fillEndOfTheDay();
+                            if ($("#totalBalance").val() === 0) {
+                                $("#amountToBeCharged").val("-");
+                                $("#amountToBeCharged").prop("readonly", true);
+                            } else {
+                                $("#amountToBeCharged").val("");
+                            }
+                            toastr.success("Ödeme kaydedildi");
+                        },
+                        error: function () {
+                            toastr.error("Tahsil Edilecek alanı boş bırakılamaz");
+
+                        }
+                    });
+                } else {
+                    toastr.error("Tahsil Edilecek alanı boş bırakılamaz");
+                }
+
+            });
+
+            $(".btnAll").off("click").on("click", function () {
+                $("#amountToBeCharged").val($("#totalBalance").val());
+            });
+
+            $(".btnDivide").off("click").on("click", function () {
+                $("#totalBalance").val()
+            });
+
+            $(".btnCloseTable").off("click").on("click", function () {
+
+                if (parseFloat($("#totalBalance").val().replace(',', '.')) === 0) {
+                    $.ajax({
+                        type: "POST",
+                        url: "/Table/CloseTable",
+                        data: { id: id },
+                        success: function () {
+                            toastr.success("Masa Kapatıldı");
+                            $("#modal").modal("hide");
+                            fillTables();
+                        }
+                    });
+                } else {
+                    toastr.error("Ödeme işlemi tamamlanmadan masa kapatılamaz");
+                }
+            });
+
+            $(".btnDivide").off("click").on("click", function () {
+                $("#divideModal").modal("show");
+
+            });
+
+            var divideText = "";
+            $(".btnNumberDivide").off("click").on("click", function () {
+                divideText += $(this).text();
+                $("#DivideNumber").val(divideText);
+            });
+
+            $(".btnDeleteDivide").off("click").on("click", function () {
+                divideText = "";
+                $("#DivideNumber").val(divideText);
+            });
+
+            $(".btnCalculate").off("click").on("click", function () {
+                var result = (parseFloat($("#totalBalance").val().replace(",", ".")) / parseFloat($("#DivideNumber").val().replace(",", "."))).toFixed(2);
+                result = result.replace(".", ",");
+                $("#amountToBeCharged").val(result);
+                $("#divideModal").modal("hide");
+                divideText = "";
+                $("#DivideNumber").val("");
+            });
+        }
+
+        function fillTables() {
+            $("#tableContainer").empty();
+            $.ajax({
+                type: "GET",
+                url: "/Table/GetTablesUsingProjection",
+                data: { page: "payment" },
+                success: function (res) {
+                    var style = "";
+                    var userFullName = "";
+                    var totalPrice = 0;
+                    var button = "";
+                    var userId = $("#userId").val();
+                    res.forEach(function (table) {
+
+                        style = `background-color: #BBE4FF;`;
+                        button = `<a href="javascript: void(0);" onclick="showOrderProducts(${table.id})" class="btn btn-warning waves-effect waves-light">Ödeme Al</a>`;
+
+                        table.orders.forEach(function (order) {
+                            userFullName = order.appUser.firstName + " " + order.appUser.lastName;
+                            totalPrice = order.totalPrice.toFixed(2).replace(".", ",");
+                        });
+
+                        $("#tableContainer").append(`
+                                                <div class="col-xl-4 col-sm-6 mb-3 mt-2">
+                                                    <div class="card" style="${style}">
+                                                        <div class="card-body">
+                                                            <div class="d-flex align-items-start">
+                                                                <div class="flex-grow-1 align-self-center">
+                                                                    <div class="border-bottom pb-1">
+                                                                        <h5 class="text-truncate font-size-18 mb-1">Masa No : ${table.name}</h5>
+                                                                        <p class="text-muted">
+                                                                            <i class="mdi mdi-account me-1"></i>${userFullName}
+                                                                        <input type="hidden" id="orderId${table.id}" />
+                                                                        </p>
+                                                                    </div>
+                                                                    <div class="row">
+                                                                        <div class="col-6">
+                                                                            <div class="mt-3">
+                                                                            ${button}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="col-6">
+                                                                            <div class="mt-3">
+                                                                                <p class="text-muted mb-2">Mesa Hesabı</p>
+                                                                                <h5 class="font-size-16 mb-0">${totalPrice} TL</h5>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                <div>`
+                        );
+
+                        table.orders.forEach(function (order) {
+                            $(`#orderId${table.id}`).val(order.id);
+                        });
+                    });
+                }
+            });
+        }
+
+        function fillOrderProducts(id) {
+            $("#order-container").empty();
+            $.ajax({
+                type: "GET",
+                url: "/Order/GetAllWithOrderProduct",
+                data: { id: id },
+                success: function (res) {
+
+                    var productName = "";
+                    var orderProductId = "";
+                    var portion = 0;
+                    var quantity = 0;
+                    var totalPrice = 0;
+                    var grandTotal = 0;
+                    res.data.orderProducts.forEach(function (orderProduct) {
+                        productName = orderProduct.product.name;
+                        orderProductId = orderProduct.id;
+                        portion = orderProduct.portion;
+                        if (portion == "0,5") {
+                            price = orderProduct.product.portion05Price;
+                        }
+                        else if (portion == "1") {
+                            price = orderProduct.product.portion1Price;
+                        }
+                        else if (portion == "1,5") {
+                            price = orderProduct.product.portion15Price;
+                        }
+                        else if (portion == "2") {
+                            price = orderProduct.product.portion2Price;
+                        }
+
+
+                        quantity = orderProduct.quantity;
+                        totalPrice = price * quantity;
+                        grandTotal += totalPrice;
+
+                        $("#order-container").append(`
+                                            <tr>
+                                                <td>${orderProductId}</td>
+                                                <td class="text-start align-middle">${productName}</td>
+                                                <td>${portion}</td>
+                                                <td>${quantity}</td>
+                                                <td>${price} TL</td>
+                                                <td>${totalPrice.toFixed(2)} TL</td>
+                                            </tr>
+                                        `);
+                    });
+
+                    $("#orderTable tfoot").remove();
+                    $("#orderTable").append(`
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="5" class="fs-6"><b>Ara Toplam : </b></td>
+                                                <td class="fs-6"><b>${grandTotal.toFixed(2)}</b><b> TL</b></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="fs-6"><b>KDV Dahil : </b></td>
+                                                <td class="fs-6"><b>0 TL</b></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="fs-6"><b>Genel Toplam<sub>(KDV Dahil)</sub> :</b></td>
+                                                <td class="fs-6"><b><span id="grandTotal">${grandTotal.toFixed(2)}</span></b><b> TL</b></td>
+                                            </tr>
+                                        </tfoot>
+                                    `);
+                    fillTotalBalance(id);
+
+                }
+            });
+        }
+
+        function showOrderProducts(id) {
+            orderId = $(`#orderId${id}`).val();
+            $("#adisyonId").text(`Adisyon No: ${orderId}`);
+            fillOrderProducts(orderId);
+            $("#modal").modal("show");
+            assignFunctionToButtons(orderId, id);
+
+        }
+
+        function fillTotalBalance(orderId) {
+            var totalPaidAmount = 0;
+
+            $.ajax({
+                type: "GET",
+                url: "/Order/GetAllPayments",
+                data: { id: orderId },
+                success: function (res) {
+                    res.data[0].payments.forEach(function (payment) {
+                        totalPaidAmount += payment.amount;
+                    });
+
+                    var grandTotal = parseFloat($("#grandTotal").text());
+
+                    var totalBalance = grandTotal - totalPaidAmount;
+
+                    $("#totalBalance").val(totalBalance.toFixed(2).replace(".", ","));
+                }
+            });
+        }
+
+
+    </script>
+    }

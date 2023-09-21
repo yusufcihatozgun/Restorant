@@ -1,0 +1,120 @@
+﻿<div class="modal fade show" id="modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" role="dialog" aria-labelledby="modalTitleId" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-fullscreen bg-light" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h4 class="card-header">Ödeme Al</h4>
+                <button type="button" class="btn btn-close bg-white border border-white" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body bg-light">
+                <div class="row">
+                    <div class="col-6 pe-5">
+                        <div class="card">
+                            <h5 id="adisyonId" class="card-header bg-secondary text-white"></h5>
+                            <div class="card-body">
+                                <table id="orderTable" class="table table-bordered text-center">
+                                    <thead>
+                                        <tr>
+                                            <th>Sipariş No</th>
+                                            <th>Ürün Adı</th>
+                                            <th>Porsiyon</th>
+                                            <th>Adet</th>
+                                            <th>Birim Fiyat</th>
+                                            <th>Toplam</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="order-container">
+                                        <!-- Sipariş içeriği buraya doldurulacak -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-6">
+                        <div class="card">
+                            <div class="card-header h5 bg-secondary text-white">Tahsilat</div>
+
+                            <div class="card-body">
+
+                                <div class="row mb-4">
+                                    <div class="row mb-2">
+
+                                        <table class="ms-2">
+                                            <tbody>
+                                                <tr>
+                                                    <td style="height:60px; width:250px;"><label class="h3">Kalan Bakiye : </label></td>
+                                                    <td><input class="border border-white bg-white text-end" id="totalBalance" type="text" style="font-size:30px; width:200px;" readonly disabled /><b class="text-muted" style=" font-size:30px;"> TL</b></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="height:60px; width:250px;"><label class="h3">Tahsil Edilecek : </label></td>
+                                                    <td><input class="text-end" onchange="setMaxAmountValidation()" id="amountToBeCharged" type="text" style="font-size:30px; width:200px;" /><b class="text-muted" style=" font-size:30px;"> TL</b></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-2">
+                                        <div class="d-flex flex-column h-100">
+                                            <button class="btnNumber btn btn-light mb-2 border border-primary waves-effect waves-light">10</button>
+                                            <button class="btnNumber btn btn-light mb-2 border border-primary waves-effect waves-light">20</button>
+                                            <button class="btnNumber btn btn-light mb-2 border border-primary waves-effect waves-light">30</button>
+                                            <button class="btnNumber btn btn-light mb-2 border border-primary waves-effect waves-light">40</button>
+                                            <button class="btnNumber btn btn-light mb-2 border border-primary waves-effect waves-light">50</button>
+                                            <button class="btnNumber btn btn-light mb-2 border border-primary waves-effect waves-light">100</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-7 d-flex">
+                                        <div class="col-4 d-flex flex-column h-100 pe-1">
+                                            <button class="btnNumber btn btn-info w-100 h-100 mb-2 waves-effect waves-light" style="font-size: 24px;">1</button>
+                                            <button class="btnNumber btn btn-info w-100 h-100 mb-2 waves-effect waves-light" style="font-size: 24px;">4</button>
+                                            <button class="btnNumber btn btn-info w-100 h-100 mb-2 waves-effect waves-light" style="font-size: 24px;">7</button>
+                                            <button class="btnNumber btn btn-info w-100 h-100 mb-2 waves-effect waves-light" style="font-size: 24px;">,</button>
+                                        </div>
+                                        <div class="col-4 d-flex flex-column h-100 ps-1">
+                                            <button class="btnNumber btn btn-info w-100 h-100 mb-2 waves-effect waves-light" style="font-size: 24px;">2</button>
+                                            <button class="btnNumber btn btn-info w-100 h-100 mb-2 waves-effect waves-light" style="font-size: 24px;">5</button>
+                                            <button class="btnNumber btn btn-info w-100 h-100 mb-2 waves-effect waves-light" style="font-size: 24px;">8</button>
+                                            <button class="btnNumber btn btn-info w-100 h-100 mb-2 waves-effect waves-light" style="font-size: 24px;">0</button>
+                                        </div>
+                                        <div class="col-4 d-flex flex-column h-100 ps-2">
+                                            <button class="btnNumber btn btn-info w-100 h-100 mb-2 waves-effect waves-light" style="font-size: 24px;">3</button>
+                                            <button class="btnNumber btn btn-info w-100 h-100 mb-2 waves-effect waves-light" style="font-size: 24px;">6</button>
+                                            <button class="btnNumber btn btn-info w-100 h-100 mb-2 waves-effect waves-light" style="font-size: 24px;">9</button>
+                                            <button class="btnDelete btn btn-info w-100 h-100 mb-2 waves-effect waves-light" style="font-size: 24px;">Sil</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-3">
+                                        <div class="d-flex flex-column h-100">
+                                            <button class="btnPay btn btn btn-light w-100 h-100 mb-2 border border-primary waves-effect waves-light">Nakit</button>
+                                            <button class="btnPay btn btn-light w-100 h-100 mb-2 border border-primary waves-effect waves-light">Kredi Kartı</button>
+                                            <button class="btnPay btn btn-light w-100 h-100 mb-2 border border-primary waves-effect waves-light">Yemek Çeki</button>
+                                            <button class="btnCloseTable btn btn-light w-100 h-100 mb-2 bg-danger border border-light waves-effect waves-light">Masa Kapat</button>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <div class="row ">
+                                    <div class="d-flex flex-row">
+                                        <button class="btnAll flex-fill me-2 waves-effect waves-light btn btn-light border border-primary">Tümü</button>
+                                        <button class="btnDivide flex-fill waves-effect waves-light btn btn-light border border-primary">1/n</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+
+
+    </div>
+</div>

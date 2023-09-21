@@ -1,0 +1,148 @@
+﻿@using System.Security.Claims;
+@section Styles{
+    <link href="~/assets/css/cdn.datatables.net_1.13.6_css_jquery.dataTables.css" rel="stylesheet" type="text/css" />
+}
+
+<head>
+    <title>Siparişler</title>
+</head>
+@{
+    if (User.IsInRole("Admin"))
+    {
+        <div id="role" class="d-none">Admin</div>
+    }
+    else if (User.IsInRole("Aşçı"))
+    {
+        <div id="role" class="d-none">Aşçı</div>
+    }
+    else if (User.IsInRole("Garson"))
+    {
+        <div id="role" class="d-none">Garson</div>
+
+    }
+
+}
+
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Siparişler</h5>
+        </div>
+        <div class="card-body">
+            <table id="datatable" class="dt-responsive nowrap cell-border hover" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+
+@section Scripts{
+    <script>
+
+        $(document).ready(function () {
+            fillDataTable();
+            Waves.init();
+        });
+
+        function fillDataTable() {
+            DataTable = $('#datatable').DataTable({
+                ajax: '/OrderProduct/GetAll',
+                columns: [
+                    { data: 'orderProductId', title: 'ID', className: 'text-center align-middle' },
+                    { data: 'productName', title: 'Ürün Adı', className: 'text-center align-middle' },
+                    { data: 'orderProductPortion', title: 'Porsiyon', className: 'text-center align-middle' },
+                    { data: 'orderProductQuantity', title: 'Adet', className: 'text-center align-middle' },
+                    {
+                        data: 'orderProductId', title: 'Sipariş Durumu', className: 'text-center align-middle', render: function (data, type, row) {
+
+                            if ($("#role").text() === "Aşçı" || $("#role").text() === "Admin") {
+
+                                var statusBeklemede = "Beklemede";
+                                var statusHazırlanıyor = "Hazırlanıyor";
+                                var statusHazır = "Hazır";
+
+                                var beklemedeChecked = row.orderProductStatus === statusBeklemede ? 'checked' : '';
+                                var hazırlanıyorChecked = row.orderProductStatus === statusHazırlanıyor ? 'checked' : '';
+                                var hazırChecked = row.orderProductStatus === statusHazır ? 'checked' : '';
+
+                                return `
+                                        <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                                            <input type="radio" id="btnRadio${data}-11" class="btn-check" name="btnRadio${data}" onclick="changeOrderProductStatus(${data}, '${statusBeklemede}')" autocomplete="off" ${beklemedeChecked}>
+                                            <label class="btn btn-outline-danger" for="btnRadio${data}-11">Beklemede</label>
+
+                                            <input type="radio" id="btnRadio${data}-22" class="btn-check" name="btnRadio${data}" onclick="changeOrderProductStatus(${data}, '${statusHazırlanıyor}')" autocomplete="off" ${hazırlanıyorChecked}>
+                                            <label class="btn btn-outline-warning" for="btnRadio${data}-22">Hazırlanıyor</label>
+
+                                            <input type="radio" id="btnRadio${data}-33" class="btn-check" name="btnRadio${data}" onclick="changeOrderProductStatus(${data}, '${statusHazır}')" autocomplete="off" ${hazırChecked}>
+                                            <label class="btn btn-outline-success" for="btnRadio${data}-33">Hazır</label>
+                                        </div>`
+                            }
+                            else if ($("#role").text() === "Garson") {
+                                var statusBeklemede = "Beklemede";
+                                var statusHazırlanıyor = "Hazırlanıyor";
+                                var statusHazır = "Hazır";
+
+                                var beklemedeChecked = row.orderProductStatus === statusBeklemede ? 'active checked' : '';
+                                var hazırlanıyorChecked = row.orderProductStatus === statusHazırlanıyor ? 'active checked' : '';
+                                var hazırChecked = row.orderProductStatus === statusHazır ? 'active checked' : '';
+
+                                return `
+                                        <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                                            <input type="radio" id="btnRadio${data}-11" class="btn-check" name="btnRadio${data}" autocomplete="off" ${beklemedeChecked}>
+                                            <label class="btn btn-outline-danger" for="btnRadio${data}-11">Beklemede</label>
+
+                                            <input type="radio" id="btnRadio${data}-22" class="btn-check" name="btnRadio${data}" autocomplete="off" ${hazırlanıyorChecked}>
+                                            <label class="btn btn-outline-warning" for="btnRadio${data}-22">Hazırlanıyor</label>
+
+                                            <input type="radio" id="btnRadio${data}-33" class="btn-check" name="btnRadio${data}" autocomplete="off" ${hazırChecked}>
+                                            <label class="btn btn-outline-success" for="btnRadio${data}-33">Hazır</label>
+                                        </div>
+                                        `;
+                            }
+                        }
+                    },
+                    { data: 'tableName', title: 'Masa No', className: 'text-center align-middle' },
+                    {
+                        data: 'orderProductId', title: 'Teslim Et', className: 'text-center align-middle', render: function (data) {
+                            if ($("#role").text() === "Garson" || $("#role").text() === "Admin") {
+                                return `<a class="btn btn-primary waves-effect waves-light" onclick="changeOrderProductStatus(${data}, 'Teslim Edildi')">Teslim Et</a>`
+                            } else if ($("#role").text() === "Aşçı") {
+                                return `<a class="btn btn-primary">Teslim Et</a>`
+                            }
+                        }
+                    }
+                ],
+                autoWidth: true
+            });
+            setInterval(function () {
+                DataTable.ajax.reload();
+            }, 30000);
+        }
+
+        function changeOrderProductStatus(orderProductId, status) {
+            $.ajax({
+                type: "Post",
+                url: "/OrderProduct/ChangeStatus",
+                data: {
+                    orderProductId: orderProductId,
+                    status: status
+                },
+                success: function (res) {
+                    toastr.success("Sipariş durumu değiştirildi");
+                    DataTable.ajax.reload(null, false);
+                },
+                error: function (res) {
+                    toastr.error(res.responseText);
+                }
+            });
+        }
+
+    </script>
+    <!-- Datatable Jquery js -->
+    <script src="~/assets/libs/datatables.net/js/cdn.datatables.net_1.13.6_js_jquery.dataTables.js"></script>
+    }
+
+
+

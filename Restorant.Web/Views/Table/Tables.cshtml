@@ -1,0 +1,620 @@
+﻿@using System.Security.Claims;
+
+<input type="hidden" id="userId" value="@User.FindFirstValue(ClaimTypes.NameIdentifier)" />
+
+<div class="modal fade" id="joinTableModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" role="dialog" aria-labelledby="modalTitleId" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title " id="modalTitleId">Masa Birleştir</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                <div id="joinTableModalBody" class="row d-flex justify-content-center align-items-center">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Kapat</button>
+                <a id="btnSaveJoinTable" class="btn btn-success">Birleştir</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="changeTableModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" role="dialog" aria-labelledby="modalTitleId" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title " id="modalTitleId">Masa Birleştir</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                <div id="changeTableModalBody" class="row">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade show" id="modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" role="dialog" aria-labelledby="modalTitleId" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h3 class="card-header">Sipariş Ekle</h3>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+
+                <div class="row">
+
+                    <div class="col-6">
+                        <div class="card mx-auto my-auto">
+                            <h5 class="card-header bg-success text-white">Ürün Seçimi</h5>
+                            <div class="card-body">
+                                <div class="form-group">
+
+                                    <div class="form-group mb-3">
+                                        <label class="mb-1" for="productSelect">Ürün :</label>
+                                        <select class="form-select" id="productSelect">
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group mb-3">
+                                        <label class="mb-1" for="txtQuantity">Adet :</label>
+                                        <input type="number" class="form-control" id="txtQuantity" min="1" value="1">
+                                    </div>
+
+                                    <div>
+                                        <label class="mb-1" for="btnGroupPortion">Porsiyon :</label><br />
+                                        <span class="btn-group" role="group" aria-label="btnGroupPortion" id="btnGroupPortion">
+                                            <a href="javascript:void(0);" class="btn btn-outline-primary" data-portion="0,5">0,5</a>
+                                            <a href="javascript:void(0);" class="btn btn-outline-primary" data-portion="1">1</a>
+                                            <a href="javascript:void(0);" class="btn btn-outline-primary" data-portion="1,5">1,5</a>
+                                            <a href="javascript:void(0);" class="btn btn-outline-primary" data-portion="2">2</a>
+                                        </span>
+
+                                        <span class="float-end">
+                                            <a id="btnSave" class="btn btn-success">Ekle</a>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="col-6">
+                        <div class="card mx-auto my-auto">
+                            <h5 id="adisyonId" class="card-header bg-info text-white"></h5>
+                            <div class="card-body">
+                                <table class="table table-bordered text-center align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Sip. No</th>
+                                            <th>Ürün Adı</th>
+                                            <th>Porsiyon</th>
+                                            <th>Adet</th>
+                                            <th>Sil</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="order-container">
+                                        <!-- Sipariş içeriği buraya doldurulacak -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<head>
+    <title>Masalar</title>
+</head>
+
+<div class="container-fluid">
+
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-flex align-items-center justify-content-between">
+                <h4 class="mb-0">Masalar</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" id="tableContainer">
+        <!--- masalar bu alana yerleştirilecek --->
+    </div>
+
+</div>
+
+@section Scripts{
+    <script>
+        var activePortion;
+        $(document).ready(function () {
+            enableGroupButtons();
+            fillTables();
+            fillDdlProducts();
+            Waves.init();
+            controlPortion();
+
+        });
+
+        function changeTable(id) {
+            var orderId = $(`#orderId${ id }`).val();
+            var newTableId = "";
+            var oldTableId = id;
+            $("#changeTableModalBody").empty();
+            var tableName = "";
+            var tableId = 0;
+            $.ajax({
+                type: "GET",
+                url: "/Table/GetAllClosedTables",
+                success: function (res) {
+                    if (res.length === 0) {
+                        $("#changeTableModalBody").append("<h4>Bütün Masalar Dolu</h4>");
+                    } else {
+                        res.forEach(function (table) {
+                            tableName = table.name;
+                            $("#changeTableModalBody").append(`<div class="col-2 mb-3"><a style="width: 100%; height: 100%;" class="changeTableButton btn btn-info btn-lg ms-1 mb-1 d-flex justify-content-center align-items-center" data-tableId="${table.id}">${tableName}</a></div>`);
+                        });
+                    }
+
+                    $(".changeTableButton").off().on("click", function () {
+                        
+                        $.ajax({
+                            type: "PATCH",
+                            url: "/Order/ChangeTable",
+                            data: {
+                                newTableId: $(this).data('tableid'),
+                                orderId: orderId,
+                                oldTableId: id
+                            },
+                            success: function (res) {
+                                toastr.success("Masa başarıyla taşındı");
+                                $("#changeTableModal").modal("hide");
+                                fillTables();
+                            },
+                            error: function () {
+                                toastr.error("Masa taşınırken hata oluştu");
+
+                            }
+                        });
+                    });
+
+                    $("#changeTableModal").modal("show");
+                }
+            });
+        }
+
+        function joinTables(tableId) {
+            var firstTableOrderId = $(`#orderId${tableId}`).val();
+            $("#joinTableModalBody").empty();
+            $.ajax({
+                type: "GET",
+                url: "/Table/GetAll",
+                success: function (res) {
+                    res.data.forEach(function (table) {
+                        if(table.id == tableId){
+                            return;
+                        }
+                        var tableName = table.name;
+                        $("#joinTableModalBody").append(`
+                        <div class="col-2 mb-3">
+                            <a href="javascript:void(0);" class="btn-selectedTable btn btn-info form-control" data-tableId="${table.id}">${tableName}</a>
+                        </div>
+                        `);
+                    });
+                    $("#joinTableModal").modal("show");
+                    var secondTableId = 0;
+                    $(".btn-selectedTable").off().on("click", function () {
+                        secondTableId = $(this).data("tableid");
+                    });
+
+                    $("#btnSaveJoinTable").off().on("click", function () {
+                        var filteredTables = res.data.filter(function (table) {
+                            return table.id === secondTableId;
+                        });
+
+                        Swal.fire({
+                            title: 'Emin Misiniz ?',
+                            text: "Birleştirme işlemi geri alınamaz !",
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: 'Onayla',
+                            cancelButtonText: 'İptal Et'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                if (filteredTables[0].status === "Boş") {
+                                    userId = $("#userId").val();
+                                    openTable(secondTableId, userId);
+                                }
+
+                                if (secondTableId != 0) {
+                                    $.ajax({
+                                        type: "Post",
+                                        url: "/Order/JoinTables",
+                                        data: {
+                                            secondTableId: secondTableId,
+                                            firstTableOrderId: firstTableOrderId,
+                                            firstTableId: tableId
+                                        },
+                                        success: function (res) {
+                                            toastr.success("Masalar başarıyla birleştirildi");
+                                            $("#joinTableModal").modal("hide");
+                                            fillTables();
+                                            Swal.fire(
+                                                'Masalar Birleştirildi',
+                                                'success'
+                                            );
+                                        }
+                                    });
+                                } else {
+                                    toastr.error("Birleştirilecek masa seçilmedi");
+                                }
+                            }
+                        })
+                        
+                        
+                    });
+                }
+            });
+        }
+
+        function controlPortion() {
+
+            $("#productSelect").off("change").on("change", function () {
+                $('#btnGroupPortion a').prop("hidden", false);
+                $.ajax({
+                    type: "GET",
+                    url: "/Product/GetById",
+                    data: { id: $("#productSelect option:selected").val() },
+                    success: function (res) {
+                        var portion05Price = res.portion05Price;
+                        var portion1Price = res.portion1Price;
+                        var portion15Price = res.portion15Price;
+                        var portion2Price = res.portion2Price;
+
+                        if (!portion05Price) {
+                            $('#btnGroupPortion [data-portion="0,5"]').prop("hidden", true);
+                        }
+                        if (!portion1Price) {
+                            $('#btnGroupPortion [data-portion="1"]').prop("hidden", true);
+                        }
+                        if (!portion15Price) {
+                            $('#btnGroupPortion [data-portion="1,5"]').prop("hidden", true);
+                        }
+                        if (!portion2Price) {
+                            $('#btnGroupPortion [data-portion="2"]').prop("hidden", true);
+                        }
+                    }
+                });
+            });
+        }
+
+        function fillTables() {
+            $("#tableContainer").empty();
+            $.ajax({
+                type: "GET",
+                url: "/Table/GetTablesUsingProjection",
+                success: function (res) {
+                    var style = "";
+                    var userFullName = "";
+                    var totalPrice = 0;
+                    var button = "";
+                    var changeAndJoinButtons = "";
+                    var userId = $("#userId").val();
+                    res.forEach(function (table) {
+                        if (table.status == "Boş") {
+                            style = `background-color: #E5FFBB;`;
+                            userFullName = "";
+                            totalPrice = "-";
+                            button = `<a href="javascript: void(0);" onclick="openTable(${table.id},${userId})" class="btn btn-success waves-effect waves-light">Masayı Aç</a>`;
+                            changeAndJoinButtons = "";
+
+                        }
+                        else if (table.status == "Dolu") {
+                            style = `background-color: #BBE4FF;`;
+                            button = `<a href="javascript: void(0);" onclick="addOrderProduct(${table.id})" class="btn btn-primary waves-effect waves-light">Sipariş Ekle</a>`;
+                            changeAndJoinButtons = `
+                            <div style="width: 80%;">
+                                <a href="javascript:void(0);" style="width: 100%;" class="btn btn-warning btn-sm mb-2 fw-bold" onclick="changeTable(${table.id})">Masa Taşı</a>
+                                <a href="javascript:void(0);" style="width: 100%;" class="btn btn-warning btn-sm mb-2 fw-bold" onclick="joinTables(${table.id})">Masa Birleştir</a>
+                            </div>
+
+                            `;
+
+                            table.orders.forEach(function (order) {
+                                userFullName = order.appUser.firstName + " " + order.appUser.lastName;
+                                totalPrice = order.totalPrice.toFixed(2).replace(".", ",");
+                            });
+                        }
+                        $("#tableContainer").append(`
+                        <div class="col-xl-4 col-sm-6 mb-3 mt-2">
+                            <div class="h-100 card" style="${style}">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start">
+                                        <div class="flex-grow-1 align-self-center">
+                                            <div class="border-bottom pb-1">
+                                                <div class="row">
+                                                    <div class="col-6">
+                                                        <h5 class="text-truncate font-size-18 mb-1">Masa No : ${table.name}</h5>
+                                                        <p class="text-muted">
+                                                        <i class="mdi mdi-account me-1"></i>${userFullName}
+                                                    </div>
+                                                    <div class="col-6">
+                                                            ${changeAndJoinButtons}
+                                                    </div>
+                                                </div>
+                                                <input type="hidden" id="orderId${table.id}" name="orderId${table.id}" />
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <div class="mt-3">
+                                                    ${button}
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <div class="mt-3">
+                                                        <p class="text-muted mb-2">Masa Hesabı</p>
+                                                        <h5 class="font-size-16 mb-0">${totalPrice} TL</h5>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        `);
+
+                        if (table.status == "Dolu") {
+                            table.orders.forEach(function (order) {
+                                $(`#orderId${table.id}`).val(order.id);
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        function openTable(tableId, userId) {
+            $.ajax({
+                type: "POST",
+                url: "/Order/Create",
+                data: {
+                    tableId: tableId,
+                    AppUserId: userId,
+                    totalPrice: 0,
+                    status: "Aktif"
+                },
+                success: function (res) {
+                    $.ajax({
+                        type: "POST",
+                        url: "/Table/OpenTable",
+                        data: { tableId: tableId },
+                        success: function (res) {
+                            fillTables();
+                        }
+                    });
+                }
+            })
+        }
+
+        function addOrderProduct(id) {
+            var orderId = $(`#orderId${id}`).val();
+            $("#adisyonId").text(`Adisyon No: ${orderId}`);
+            $("#productSelect").val("");
+            $("#txtQuantity").val(1);
+            $("#btnGroupPortion a").siblings().removeClass('active');
+            //$("#btnGroupPortion a[data-portion='1']").addClass('active');
+            fillOrderProducts(orderId);
+            $("#modal").modal("show");
+
+
+            $("#btnSave").off().on("click",function () {
+                activePortion = $("#btnGroupPortion a.active").data("portion");
+
+                $.ajax({
+                    type: "POST",
+                    url: "/OrderProduct/Create",
+                    data: {
+                        orderId: orderId,
+                        productId: $("#productSelect option:selected").val(),
+                        portion: activePortion,
+                        quantity: $("#txtQuantity").val(),
+                        status: "Beklemede"
+                    },
+                    success: function (res) {
+                        $("#btnGroupPortion a").siblings().removeClass('active');
+                        $("#productSelect").val("");
+                        $("#txtQuantity").val(1);
+
+
+                        $.ajax({
+                            type: "GET",
+                            url: "/Order/GetById",
+                            data: { id: orderId },
+                            success: function (res) {
+                                toastr.success("Sipariş başarıyla eklendi.");
+                                var price = 0;
+                                var totalPrice = 0;
+                                var portion = 0;
+                                res.orderProducts.forEach(function (orderProduct) {
+                                    portion = orderProduct.portion;
+
+                                    if (portion == "0,5") {
+                                        price = orderProduct.product.portion05Price;
+                                    }
+                                    if (portion == "1") {
+                                        price = orderProduct.product.portion1Price;
+                                    }
+                                    if (portion == "1,5") {
+                                        price = orderProduct.product.portion15Price;
+                                    }
+                                    if (portion == "2") {
+                                        price = orderProduct.product.portion2Price;
+
+                                    }
+                                    totalPrice += orderProduct.quantity * price;
+                                });
+
+                                $.ajax({
+                                    type: "PATCH",
+                                    url: "/Order/UpdateTotalPrice",
+                                    data: {
+                                        id: orderId,
+                                        totalPrice: totalPrice.toFixed(2).replace(".", ",")
+                                    },
+                                    success: function (res) {
+                                        fillTables();
+                                        fillOrderProducts(orderId);
+                                    }
+                                })
+                            }
+                        })
+                    },
+                    error: function (res) {
+                        if (res.responseText == "Lütfen ürün seçiniz")
+                            toastr.error("Lütfen ürün seçiniz");
+                        else
+                            toastr.error("sipariş eklenirken hata oluştu")
+                    }
+                })
+            });
+        }
+
+        function enableGroupButtons() {
+            $('#btnGroupPortion a').click(function (e) {
+                e.preventDefault();
+                $(this).siblings().removeClass('active');
+                $(this).addClass('active');
+                activePortion = $(this).data('portion');
+            });
+
+        }
+
+        function fillDdlProducts() {
+            $.ajax({
+                type: "GET",
+                url: "/Product/GetAllWithProjection",
+                success: function (res) {
+                    $("#productSelect").empty();
+                    $("#productSelect").append('<option value="" selected>Ürün Seçiniz</option>');
+
+                    for (var item of res) {
+                        $("#productSelect").append(new Option(item.name, item.productId, false, false));
+                    }
+                }
+            })
+        }
+
+        function fillOrderProducts(id) {
+            $("#order-container").empty();
+            $.ajax({
+                type: "GET",
+                url: "/Order/GetAllWithOrderProduct",
+                data: { id: id },
+                success: function (res) {
+
+                    var productName = "";
+                    var orderProductId = "";
+                    var portion = 0;
+                    var quantity = 0;
+
+                    res.data.orderProducts.forEach(function (orderProduct) {
+                        productName = orderProduct.product.name;
+                        orderProductId = orderProduct.id;
+                        portion = orderProduct.portion;
+                        quantity = orderProduct.quantity;
+
+                        $("#order-container").append(`<tr><td>${orderProductId}</td> <td class="text-start align-middle">${productName}</td> <td>${portion}</td> <td>${quantity}</td> <td>
+                        <a href="javascript:void(0);" onclick="deleteOrderProduct(${orderProductId},${id})" class="px-3 text-danger">
+                            <i class="uil uil-trash-alt font-size-18"> </i>
+                        </a></td></tr>
+                        `);
+
+                    });
+
+
+
+                }
+            });
+        }
+
+        function deleteOrderProduct(orderProductId, orderId) {
+            $.ajax({
+                type: "GET",
+                url: "/Order/GetAllWithOrderProduct",
+                data: { id: orderId },
+                success: function (GetAllWithOrderProductRes) {
+
+                    $.ajax({
+                        type: "DELETE",
+                        url: "/OrderProduct/Delete",
+                        data: { id: orderProductId },
+                        success: function (res) {
+                            toastr.success("Sipariş başarıyla silindi");
+                            var remainingOrderProducts = GetAllWithOrderProductRes.data.orderProducts.filter(function (orderProduct) {
+                                return orderProduct.id !== orderProductId;
+                            });
+
+                            var price = 0;
+                            var totalPrice = 0;
+                            var portion = "";
+                            remainingOrderProducts.forEach(function (orderProduct) {
+                                portion = orderProduct.portion;
+
+                                if (portion == "0,5") {
+                                    price = orderProduct.product.portion05Price;
+                                }
+                                if (portion == "1") {
+                                    price = orderProduct.product.portion1Price;
+                                }
+                                if (portion == "1,5") {
+                                    price = orderProduct.product.portion15Price;
+                                }
+                                if (portion == "2") {
+                                    price = orderProduct.product.portion2Price;
+
+                                }
+                                totalPrice += orderProduct.quantity * price;
+                            });
+                            totalPrice = totalPrice.toFixed(2).replace(".", ",");
+
+                            $.ajax({
+                                type: "PATCH",
+                                url: "/Order/UpdateTotalPrice",
+                                data: { id: orderId, totalPrice: totalPrice },
+                                success: function (res) {
+                                    $("#order-container").empty();
+                                    fillOrderProducts(orderId);
+                                    fillTables();
+
+                                },
+                                error: function (res) {
+                                    toastr.error("Masa hesabı güncellenirken hata oluştu");
+                                }
+
+                            });
+                        },
+                        error: function () {
+                            toastr.error("Ürün silinirken hata oluştu");
+                        }
+                    })
+                }
+            })
+        }
+    </script>
+    }

@@ -1,0 +1,129 @@
+﻿@{
+    Layout = "";
+}
+
+<!doctype html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8" />
+    <title>Giriş</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
+    <meta content="Themesbrand" name="author" />
+    <!-- App favicon -->
+    <link rel="shortcut icon" href="~/assets/images/favicon.ico">
+    <!-- Bootstrap Css -->
+    <link href="~/assets/css/bootstrap.min.css" id="bootstrap-style" rel="stylesheet" type="text/css" />
+    <!-- Icons Css -->
+    <link href="~/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+    <!-- App Css-->
+    <link href="~/assets/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
+    <!-- Toaster Css-->
+    <link rel="stylesheet" href="~/assets/libs/toastr/build/toastr.min.css">
+
+</head>
+
+<body class="authentication-bg">
+    <div class="account-pages my-5 pt-sm-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="text-center">
+                        <a asp-controller="Home" asp-action="Index" class="mb-5 d-block auth-logo">
+                            <img src="~/assets/images/logo-dark.png" alt="" height="22" class="logo logo-dark">
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="row align-items-center justify-content-center">
+                <div class="col-md-8 col-lg-6 col-xl-5">
+                    <div class="card">
+                        <div class="card-body p-4">
+                            <div class="text-center mt-2">
+                                <h5 class="text-primary">Giriş</h5>
+                            </div>
+                            <div class="p-2 mt-4">
+                                <div class="mb-3">
+                                    <label class="form-label" for="username">Kullanıcı Adı</label>
+                                    <input type="text" class="form-control" id="username" placeholder="Kullanıcı adı giriniz">
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="float-end">
+                                        @*<a href="auth-recoverpw.html" class="text-muted">Forgot password?</a>*@
+                                    </div>
+                                    <label class="form-label" for="userpassword">Şifre</label>
+                                    <input type="password" class="form-control" id="userpassword" placeholder="Şifre giriniz">
+                                </div>
+
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="auth-remember-check">
+                                    <label class="form-check-label" for="auth-remember-check">Beni hatırla</label>
+                                </div>
+
+                                <div class="mt-3 text-end">
+                                    <a href="javascript:void(0);" id="btnLogin" class="btn btn-primary waves-effect waves-light form-control mt-4">Giriş yap</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- JAVASCRIPT -->
+    <script src="~/assets/libs/jquery/jquery-3.7.1.min.js"></script>
+    <script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/assets/libs/metismenu/metisMenu.min.js"></script>
+    <script src="~/assets/libs/simplebar/simplebar.min.js"></script>
+    <script src="~/assets/libs/node-waves/waves.min.js"></script>
+    <script src="~/assets/libs/waypoints/lib/jquery.waypoints.min.js"></script>
+    <script src="~/assets/libs/jquery.counterup/jquery.counterup.min.js"></script>
+    <script src="~/assets/libs/toastr/toastr.js"></script>
+
+    <!-- App js -->
+    <script src="~/assets/js/app.js"></script>
+    <script>
+        toastr.options = {
+            positionClass: 'toast-top-left',
+            timeOut: 2000
+        };
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            Waves.init();
+            $("#btnLogin").off().on("click", login);
+        });
+        function login() {
+            var username = $("#username").val();
+            var password = $("#userpassword").val();
+            var isRememberMe = $("#auth-remember-check").val();
+            var data = {
+                username: username,
+                password: password,
+                isRememberMe: isRememberMe
+            }
+            
+            
+            $.ajax({
+                type:"Post",
+                url:"/AppUser/Login",
+                data:data,
+                success:function(){
+                    window.location.href = "/Home/Index";
+                },
+                error:function(res){
+                    $("#username").val("");
+                    $("#userpassword").val("");
+                    $("#auth-remember-check").prop("checked", false);
+                    toastr.error(res.responseText);
+                },
+
+            })
+        }
+    </script>
+</body>
+</html>

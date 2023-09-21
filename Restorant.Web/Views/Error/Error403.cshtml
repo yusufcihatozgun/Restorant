@@ -1,0 +1,31 @@
+﻿@{
+    Layout = "";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>403 Forbidden</title>
+    <link rel="stylesheet" href="~/assets/css/403style.css">
+    <link href="~/assets/libs/node-waves/waves.min.css" rel="stylesheet">
+
+
+</head>
+<body>
+    <div class="lock"></div>
+    <div class="message">
+        <h1>Bu sayfa için yetkiniz bulunmuyor</h1>
+    </div>
+    <a class="btn btn-primary waves-effect waves-light" asp-controller="Home" asp-action="Index">Ana Sayfaya Dön</a>
+    <script src="~/assets/libs/node-waves/waves.min.js"></script>
+    <script src="~/assets/libs/jquery/jquery.min.js"></script>
+    <script>
+        
+
+        $(document).ready(function () {
+            Waves.init();
+        });
+    </script>
+</body>
+</html>

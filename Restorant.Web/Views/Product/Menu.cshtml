@@ -1,0 +1,370 @@
+﻿@section Styles{
+    <link href="~/assets/css/comment.css" rel="stylesheet" type="text/css" />
+    <!-- jquery-bar-rating css -->
+    <link href="~/assets/libs/jquery-bar-rating/themes/fontawesome-stars-o.css" rel="stylesheet" type="text/css" />
+    <link href="~/assets/libs/jquery-bar-rating/themes/fontawesome-stars.css" rel="stylesheet" type="text/css" />
+    <link href="~/assets/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
+}
+<head>
+    <title>Ürünler</title>
+</head>
+
+
+<div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modal" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Ürün Yorumları</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat">
+                </button>
+            </div>
+            <div id="modalBody" class="modal-body">
+
+                <div id="commentContainer" class="container">
+                    
+
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btnClose" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="container-fluid">
+
+    <div class="row">
+        <div class="col-xl-3 col-lg-3 col-sm-4 col-xsm-12">
+            <div class="card">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="mb-3 mt-2 text-center">Kategoriler</h5>
+                </div>
+
+                <div class="p-4">
+                    <div class="accordion accordion-flush" id="accordionCategory">
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+
+        <div class="col-xl-9 col-lg-9 col-sm-8 col-xsm-12">
+            <div class="card">
+                <div class="card-body">
+                    <div>
+                        <ul class="nav nav-tabs nav-tabs-custom mt-3 mb-2 ecommerce-sortby-list">
+                            <li class="nav-item">
+                                <a class="nav-link disabled fw-medium" href="javascript:void(0);" tabindex="-1" aria-disabled="true">Sırala:</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-order-link active" id="btnOrderByOrderCount" href="javascript:void(0);" onclick="fillProducts('withOrderCount')">Popüler</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-order-link" href="javascript:void(0);" onclick="fillProducts('WithProductScore')">Ürün Puanı</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-order-link" href="javascript:void(0);" onclick="fillProducts('AlphabeticOrder')">A - Z</a>
+                            </li>
+                        </ul>
+                        <div class="d-none" id="orderCriteriaContainer">Popüler</div>
+
+                        @* ürünleri içeren container*@
+                        <div class="row product-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script>
+        $(document).ready(function () {
+            fillCategories('withOrderCount');
+            fillProducts();
+            Waves.init();
+            enableNavButtons();
+        });
+
+        function fillCategories() {
+            $.ajax({
+                type: "GET",
+                url: "/Category/GetAllWithSubCategory",
+                success: function (res) {
+                    var accordionIndex = 1;
+
+                    $("#accordionCategory").append(`<a style="width:100%;" href="javascript:void(0);" class="btn text-primary fw-semibold text-decoration-underline waves-effect waves-secondary mb-3 d-line" onclick="filter()">Tümü</a>`);
+
+
+                    res.forEach(function (category) {
+                        var accordionId = "categories-collapse-" + accordionIndex;
+                        var result = "";
+                        category.subCategories.forEach(function (subCategory) {
+                            result += `<div class="accordion-item"><div class=""><a class="btn text-start waves-effect waves-secondary form-control" onclick="filter(${subCategory.id})">${subCategory.name}</a></div></div>`;
+                        });
+
+                        $("#accordionCategory").append(`
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="${accordionId}">
+                                <button class="fw-semibold accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${category.name.replace(" ", "-")}-collapse" aria-expanded="false" aria-controls="${category.name}-collapse">
+                                    ${category.name}
+                                </button>
+                            </h2>
+                            <div id="${category.name.replace(" ", "-")}-collapse" class="accordion-collapse collapse" aria-labelledby="${accordionId}" data-bs-parent="#accordionCategory">
+                                <div class="accordion-body">
+                                    ${result}
+                                </div>
+                            </div>
+                        </div>`);
+
+                        accordionIndex++;
+                    });
+                }
+            });
+        }
+
+        function fillCustomerReviews(productId) {
+            $("#commentContainer").empty();
+            $.ajax({
+                type: "GET",
+                url: "/CustomerReview/GetAll",
+                data: { productId: productId },
+                success: function (res) {
+                    var commentCount = res.data.length;
+                    $("#commentContainer").append(`<h1 id="comments-title" class="comments-title">Yorumlar (${commentCount}) </h1>`);
+
+                    if (commentCount === 0) {
+                        $("#commentContainer").append(`<div class="alert alert-warning text-center">Ürüne henüz yorum eklenmemiş</div>`);
+                    }
+                    
+                    res.data.forEach(function (customerReview) {
+                        console.log(customerReview)
+                        var customerReviewsAndComments = `
+                        <div class="be-comment">
+                            <div class="be-img-comment">
+                                <img src="/assets/images/avatars/avatar${customerReview.avatarNo}.png" alt="" class="be-ava-comment">
+                            </div>
+                            <div class="be-comment-content">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+
+                                        <div class="be-comment-name">
+                                            <a>${customerReview.customerName}</a>
+                                        </div>
+                                    </div>
+                                    <div class="br-wrapper br-theme-fontawesome-stars">
+                                    <div class="be-comment-time"><i class="fa fa-clock-o"></i>${new Date(customerReview.dateCreated).toLocaleTimeString('tr-TR')}</div>
+
+                                        <select id="product-rating" style="display: none;">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                        </select>
+                                        <div class="br-widget">${generateStarRating(customerReview.reviewScore)}</div>
+                                    </div>
+                                </div>
+                                <p class="be-comment-text">${customerReview.customerComment}</p>
+                            </div>
+                        </div>`;
+
+                        $("#commentContainer").append(customerReviewsAndComments);
+                    });
+
+                    $("#modal").modal("show");
+                }
+            });
+        }
+
+        function enableNavButtons() {
+            $(".nav-order-link").off().on("click", function () {
+                $("#orderCriteriaContainer").text($(this).text());
+                $(".nav-order-link").removeClass("active");
+                $(this).addClass("active");
+            });
+        }
+
+        function filter(subCategoryId) {
+            $.ajax({
+                type: "GET",
+                url: `/Product/GetAll`,
+                data: { subCategoryId: subCategoryId },
+                success: function (res) {
+                    $(".product-container").empty();
+                    var sortedRes;
+                    if ($("#orderCriteriaContainer").text() === "Popüler") {
+                        sortedRes = res.sort((a, b) => b.orderCount - a.orderCount);
+                    }
+                    else if ($("#orderCriteriaContainer").text() === "Ürün Puanı") {
+
+                        sortedRes = res.sort((a, b) => b.averageCustomerReviewScore - a.averageCustomerReviewScore);
+                    }
+                    else if ($("#orderCriteriaContainer").text() === "A - Z") {
+
+                        sortedRes = res.sort((a, b) => a.name.localeCompare(b.name));
+                    }
+
+                    sortedRes.forEach(function (product) {
+                        let imgSrc = getProductImageUrl(product);
+                        var avgReviewScore = calculateAverageReviewScore(product);
+                        var starLinksHtml = generateStarRating(avgReviewScore);
+                        var Prices = generatePricesTable(product);
+
+                        var productHtml = generateProductHtml(product, imgSrc, starLinksHtml, Prices);
+
+                        $(".product-container").append(productHtml);
+                    });
+                }
+            });
+        }
+
+        function fillProducts(sortingCriteria) {
+            $.ajax({
+                type: "GET",
+                url: `/Product/GetAll`,
+                success: function (res) {
+                    $(".product-container").empty();
+                    var sortedRes = sortProducts(res, sortingCriteria);
+
+                    sortedRes.forEach(function (product) {
+                        var imgSrc = getProductImageUrl(product);
+                        var avgReviewScore = calculateAverageReviewScore(product);
+                        var starLinksHtml = generateStarRating(avgReviewScore);
+                        var Prices = generatePricesTable(product);
+
+                        var productHtml = generateProductHtml(product, imgSrc, starLinksHtml, Prices);
+
+                        $(".product-container").append(productHtml);
+                    });
+                }
+            });
+        }
+
+        function sortProducts(products, sortingCriteria) {
+            if (sortingCriteria === "withOrderCount" || sortingCriteria === undefined) {
+                return products.sort((a, b) => b.orderCount - a.orderCount);
+            } else if (sortingCriteria === "WithProductScore") {
+                return products.sort((a, b) => b.averageCustomerReviewScore - a.averageCustomerReviewScore);
+            } else if (sortingCriteria === "AlphabeticOrder") {
+                return products.sort((a, b) => a.name.localeCompare(b.name));
+            }
+        }
+
+        function getProductImageUrl(product) {
+            return product.imageUrl ? `/assets/images/product/${product.imageUrl}` : "/assets/images/product/a.jpg";
+        }
+
+        function calculateAverageReviewScore(product) {
+            if (!product.customerReviewScores || product.customerReviewScores.length === 0) {
+                console.log("0 imiş")
+                return 0;
+            }
+
+            var totalReviewScore = 0;
+
+            for (var i = 0; i < product.customerReviewScores.length; i++) {
+                totalReviewScore += product.customerReviewScores[i];
+
+            }
+
+            var avgReviewScore = Math.round(totalReviewScore / product.customerReviewScores.length)
+            return avgReviewScore;
+        }
+
+        function generateStarRating(avgReviewScore) {
+            var starLinks = "";
+            var starLink = "";
+            for (let i = 1; i <= 5; i++) {
+                if (i <= avgReviewScore) {
+                    starLink = `<a data-rating-value="${i}" data-rating-text="${i}" class="br-selected br-current"></a>`;
+                    starLinks += starLink;
+                }
+                else {
+                    starLink = `<a data-rating-value="${i}" data-rating-text="${i}"></a>`;
+                    starLinks += starLink;
+                }
+            }
+            return starLinks;
+        }
+
+        function generatePricesTable(product) {
+            var portions = [
+                { name: "0,5", price: product.portion05Price },
+                { name: "1", price: product.portion1Price },
+                { name: "1,5", price: product.portion15Price },
+                { name: "2", price: product.portion2Price }
+            ];
+
+            var rows = portions
+                .filter(portion => portion.price != null)
+                .map(portion => `
+                            <tr style="line-height: 0.8;">
+                                <td class="border fw-bold">${portion.name}</td>
+                                <td class="border" >${portion.price} TL</td>
+                            </tr>`
+                );
+
+            if (rows.length === 0) {
+                return "";
+            }
+
+            var pricesTable = `
+                        <table class="table table-borderless align-middle">
+                            <thead>
+                                <tr>
+                                    <th class="align-middle text-center" colspan="2">Porsiyonlar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="border">
+                                ${rows.join('')}
+                            </tbody>
+                        </table>`;
+
+            return pricesTable;
+        }
+
+        function generateProductHtml(product, imgSrc, starLinksHtml, pricesTable) {
+            var productHtml = `
+                        <div class="col-xxl-4 col-xl-4 col-lg-4 col-sm-6">
+                            <div style="cursor: default;" class="product-box">
+                                <div class="product-img mb-3">
+                                    <img src="${imgSrc}" alt="${product.name}" class="img-fluid mx-auto d-block">
+                                </div>
+                                <div class="text-center product-content p-4">
+                                    <h5 class="mb-1"><p class="text-dark">${product.name}</p></h5>
+
+                                    <div class="br-wrapper br-theme-fontawesome-stars">
+                                        <select id="product-rating" style="display: none;">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                        </select>
+                                        <div class="br-widget">${starLinksHtml}</div>
+                                        <div class="mt-3">
+                                            <button style="cursor: pointer;" class="btn btn-success" onclick="fillCustomerReviews(${product.productId})"><i class="uil-comment-search"></i>  Yorumları Görüntüle</button>
+                                        </div>
+                                    <div class="align-middle mt-3 mb-0">${pricesTable}</div>
+                                </div>
+                            </div>
+                        </div>`;
+
+            return productHtml;
+        }
+    </script>
+
+    <!-- Ion Range Slider-->
+    <script src="~/assets/libs/jquery/jquery-3.7.1.min.js"></script>
+
+    <!-- jquery-bar-rating js -->
+    <script src="~/assets/libs/jquery-bar-rating/jquery.barrating.min.js"></script>
+
+    <script src="~/assets/js/pages/rating-init.js"></script>
+
+    }

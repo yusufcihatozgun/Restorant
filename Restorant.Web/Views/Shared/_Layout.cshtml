@@ -1,0 +1,321 @@
+﻿<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
+    <meta content="Themesbrand" name="author" />
+
+    
+    <!-- App favicon -->
+    <link rel="shortcut icon" href="~/assets/images/favicon.ico">
+    <!-- Select2 Css -->
+    <link href="~/assets/libs/select2/css/select2.min.css" rel="stylesheet" type="text/css" />
+    <!-- Bootstrap Css -->
+    <link href="~/assets/css/bootstrap.min.css" id="bootstrap-style" rel="stylesheet" type="text/css" />
+    <!-- Icons Css -->
+    <link href="~/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+    <!-- App Css-->
+    <link href="~/assets/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
+    <!-- Toaster Css-->
+    <link rel="stylesheet" href="~/assets/libs/toastr/build/toastr.min.css">
+    <!--waves Css-->
+    <link href="~/assets/libs/node-waves/waves.min.css" rel="stylesheet">
+
+    @await RenderSectionAsync("Styles",false)
+   
+</head>
+
+<body data-layout="horizontal" data-topbar="colored">
+
+    <!-- Begin page -->
+    <div id="layout-wrapper">
+
+        <header id="page-topbar">
+            <div class="navbar-header">
+                <div class="d-flex">
+
+                    <!-- LOGO -->
+                    <div class="navbar-brand-box">
+                        <a asp-controller="Home" asp-action="Index" class="logo logo-light">
+                            <span class="logo-sm">
+                                <img src="~/assets/images/logo-sm.png" alt="" height="22">
+                            </span>
+                            <span class="logo-lg">
+                                <img src="~/assets/images/logo-light.png" alt="" height="20">
+                            </span>
+                        </a>
+                    </div>
+
+                    <button type="button" class="btn btn-sm px-3 font-size-16 d-lg-none header-item waves-effect waves-light" data-bs-toggle="collapse" data-bs-target="#topnav-menu-content">
+                        <i class="fa fa-fw fa-bars"></i>
+                    </button>
+                </div>
+
+                <div class="d-flex">
+
+                    <div class="dropdown d-inline-block d-lg-none ms-2">
+                        <button type="button" class="btn header-item noti-icon waves-effect" id="page-header-search-dropdown"
+                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="uil-search"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
+                             aria-labelledby="page-header-search-dropdown">
+
+                            <form class="p-3">
+                                <div class="m-0">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" placeholder="Search ..." aria-label="Recipient's username">
+                                        <div class="input-group-append">
+                                            <button class="btn btn-primary" type="submit"><i class="mdi mdi-magnify"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+
+
+                    <div class="dropdown d-none d-lg-inline-block ms-1">
+                        <button type="button" class="btn header-item noti-icon waves-effect" data-bs-toggle="fullscreen">
+                            <i class="uil-minus-path"></i>
+                        </button>
+                    </div>
+
+                    <div class="dropdown d-lg-inline-block text-center my-auto">
+                        @{
+                            if (@User.Identity.Name == null)
+                            {
+                                <a class="btn btn-outline-light waves-effect waves-light" asp-controller="AppUser" asp-action="Login">Giriş Yap</a>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn header-item waves-effect mx-auto" id="page-header-user-dropdown"
+                                        data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span class="d-none d-xl-inline-block ms-1 fw-medium font-size-15">@User.Identity.Name</span>
+                                    <i class="uil-angle-down d-none d-xl-inline-block font-size-15"></i>
+                                </button>
+
+                                <div class="dropdown-menu dropdown-menu-end">
+                                    <a class="dropdown-item" asp-controller="AppUser" asp-action="Logout">
+                                        <i class="uil-sign-out-alt font-size-18 align-middle me-1 text-muted"></i>
+                                        <span class="align-middle">Çıkış yap</span>
+                                    </a>
+                                    <a class="dropdown-item" asp-controller="AppUser" asp-action="ChangePassword">
+                                        <i class="mdi mdi-key font-size-18 align-middle me-1 text-muted"></i>
+                                        <span class="align-middle">Şifre Değiştir</span>
+                                    </a>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="container-fluid">
+                <div class="topnav">
+
+                    <nav class="navbar navbar-light navbar-expand-lg topnav-menu">
+
+                        <div class="collapse navbar-collapse" id="topnav-menu-content">
+                            <ul class="navbar-nav">
+                                @{
+                                    if (!User.Identity.IsAuthenticated)
+                                    {
+                                        <li class="nav-item">
+                                            <a asp-controller="Home" asp-action="Index" class="nav-link">
+                                                <i class="uil-home-alt me-2"></i> Anasayfa
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a asp-controller="Product" asp-action="Menu" class="nav-link">
+                                                <i class="mdi mdi-food me-2"></i> Menü
+                                            </a>
+                                        </li>
+                                    }
+                                    else
+                                    {
+                                        if (User.IsInRole("Admin"))
+                                        {
+                                            <li class="nav-item">
+                                                <a asp-controller="Home" asp-action="Index" class="nav-link">
+                                                    <i class="uil-home-alt me-2"></i> Anasayfa
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a asp-controller="Product" asp-action="Menu" class="nav-link">
+                                                    <i class="mdi mdi-food me-2"></i> Menü
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a asp-controller="OrderProduct" asp-action="Index" class="nav-link">
+                                                    <i class="mdi mdi-chef-hat"></i> Siparişler
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a asp-controller="Table" asp-action="Tables" class="nav-link">
+                                                    <i class="mdi mdi-table-chair me-2"></i> Masalar
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a asp-controller="Payment" asp-action="Index" class="nav-link">
+                                                    <i class="mdi mdi-account-cash me-2"></i> Kasa
+                                                </a>
+                                            </li>
+                                            <li class="nav-item dropdown">
+                                                <a class="nav-link dropdown-toggle arrow-none" href="javascript:void(0);" id="topnav-components" role="button">
+                                                    <i class="fas fa-layer-group me-2"></i>Yönetsel Araçlar
+                                                </a>
+                                                <div class="dropdown-menu" aria-labelledby="topnav-components">
+                                                    <div class="nav-item">
+                                                        <a asp-controller="Order" asp-action="OrderArchive" class="nav-link">
+                                                            <i class="uil-invoice me-2"></i> Adisyon Arşivi
+                                                        </a>
+                                                    </div>
+                                                    <div class="dropdown">
+                                                        <a asp-controller="Table" asp-action="Index" class="nav-link">
+                                                            <i class="mdi mdi-table-chair me-2"></i> Masa Yönetimi
+                                                        </a>
+                                                    </div>
+                                                    <div class="dropdown">
+                                                        <a asp-controller="Category" asp-action="Index" class="nav-link">
+                                                            <i class="fas fa-sitemap me-2"></i> Kategori Yönetimi
+                                                        </a>
+                                                    </div>
+                                                    <div class="dropdown">
+                                                        <a asp-controller="SubCategory" asp-action="Index" class="nav-link">
+                                                            <i class="uil-gold me-2"></i> Alt Kategori Yönetimi
+                                                        </a>
+                                                    </div>
+                                                    <div class="dropdown">
+                                                        <a asp-controller="AppUser" asp-action="Index" class="nav-link">
+                                                            <i class="fas fa-user-edit me-2"></i> Kullanıcı Yönetimi
+                                                        </a>
+                                                    </div>
+                                                    <div class="dropdown">
+                                                        <a asp-controller="Product" asp-action="Index" class="nav-link">
+                                                            <i class="mdi mdi-food me-2"></i> Ürün Yönetimi
+                                                        </a>
+                                                    </div>
+                                                    <div class="dropdown">
+                                                        <a asp-controller="Payment" asp-action="Statistics" class="nav-link">
+                                                            <i class="uil-chart-line me-2"></i> İstatistikler
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        }
+                                        else if (User.IsInRole("Garson"))
+                                        {
+                                            <li class="nav-item">
+                                                <a asp-controller="Home" asp-action="Index" class="nav-link">
+                                                    <i class="uil-home-alt me-2"></i> Anasayfa
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a asp-controller="Product" asp-action="Menu" class="nav-link">
+                                                    <i class="mdi mdi-food me-2"></i> Menü
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a asp-controller="Order" asp-action="Index" class="nav-link">
+                                                    <i class="mdi mdi-chef-hat"></i> Siparişler
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a asp-controller="Table" asp-action="Tables" class="nav-link">
+                                                    <i class="mdi mdi-table-chair me-2"></i> Masalar
+                                                </a>
+                                            </li>
+                                        }
+                                        else if (User.IsInRole("Kasiyer"))
+                                        {
+                                            <li class="nav-item">
+                                                <a asp-controller="Home" asp-action="Index" class="nav-link">
+                                                    <i class="uil-home-alt me-2"></i> Anasayfa
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a asp-controller="Product" asp-action="Menu" class="nav-link">
+                                                    <i class="mdi mdi-food me-2"></i> Menü
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a asp-controller="Payment" asp-action="Index" class="nav-link">
+                                                    <i class="mdi mdi-account-cash me-2"></i> Kasa
+                                                </a>
+                                            </li>
+                                        }
+                                        else if (User.IsInRole("Aşçı"))
+                                        {
+                                            <li class="nav-item">
+                                                <a asp-controller="Home" asp-action="Index" class="nav-link">
+                                                    <i class="uil-home-alt me-2"></i> Anasayfa
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a asp-controller="Product" asp-action="Menu" class="nav-link">
+                                                    <i class="mdi mdi-food me-2"></i> Menü
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a asp-controller="Order" asp-action="Index" class="nav-link">
+                                                    <i class="mdi mdi-chef-hat"></i> Siparişler
+                                                </a>
+                                            </li>
+                                        }
+                                    }
+                                }
+                            </ul>
+                        </div>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+
+
+        <!-- ============================================================== -->
+        <!-- Start right Content here -->
+        <!-- ============================================================== -->
+        <div class="main-content">
+
+            <div class="page-content">
+                @RenderBody()
+
+            </div>
+            <!-- End Page-content -->
+        </div>
+        <!-- end main content-->
+
+    </div>
+    <!-- END layout-wrapper -->
+    <!-- Right bar overlay-->
+    <div class="rightbar-overlay"></div>
+
+    <!-- JAVASCRIPT -->
+    <script src="~/assets/libs/jquery/jquery-3.7.1.min.js"></script>
+    <script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/assets/libs/metismenu/metisMenu.min.js"></script>
+    <script src="~/assets/libs/node-waves/waves.min.js"></script>
+    <script src="~/assets/libs/toastr/toastr.js"></script>
+    <script src="~/assets/libs/sweetalert2/sweetalert2.min.js"></script>
+
+    <!-- Select2 -->
+    <script src="~/assets/libs/select2/js/select2.min.js"></script>
+    <!-- App js -->
+    <script src="~/assets/js/app.js"></script>
+
+
+    <script>
+        toastr.options = {
+            positionClass: 'toast-top-left',
+            timeOut: 2000
+        };
+    </script>
+    @await RenderSectionAsync("Scripts",false)
+</body>
+</html>

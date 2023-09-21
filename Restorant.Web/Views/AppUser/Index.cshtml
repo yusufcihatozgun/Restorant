@@ -1,0 +1,272 @@
+﻿@section Styles{
+    <link href="~/assets/css/cdn.datatables.net_1.13.6_css_jquery.dataTables.css" rel="stylesheet" type="text/css" />
+}
+
+<head>
+    <title>Kullanıcılar</title>
+</head>
+
+<div class="modal fade" id="modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" role="dialog" aria-labelledby="modalTitleId" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title " id="modalTitleId">Kullanıcı Ekle </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                <div class="container">
+                    <div class="mb-3">
+                        <label class="form-label">Kullanıcı Adı</label>
+                        <input type="text" id="txtUserName" class="form-control txt" maxlength="40" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Adı</label>
+                        <input type="text" id="txtFirstName" class="form-control txt" maxlength="40" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Soyadı</label>
+                        <input type="text" id="txtLastName" class="form-control txt" maxlength="40" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Pozisyon</label>
+                        <select id="ddlPositonSelect" class="form-control select2">
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <option value="1">Admin</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                <a id="btnSave" class="btn btn-primary">Kaydet</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Kullanıcı Listesi</h5>
+            <a class="btn btn-success waves-effect waves-light" onclick="addUser()">Kullanıcı Ekle</a>
+        </div>
+        <div class="card-body">
+            <table id="datatable" class="dt-responsive nowrap cell-border hover" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script>
+        var DataTable;
+        $(document).ready(function () {
+            fillDataTable();
+            fillDdlPositionSelect();
+            Waves.init();
+        })
+        function fillDataTable() {
+            DataTable = $('#datatable').DataTable({
+                ajax: '/AppUser/GetAll',
+                columns: [
+                    { data: 'id', title: 'ID', className: 'text-center align-middle' },
+                    { data: 'userName', title: 'Kullanıcı Adı', className: 'text-center align-middle' },
+                    { data: 'firstName', title: 'Adı', className: 'text-center align-middle' },
+                    { data: 'lastName', title: 'Soyadı', className: 'text-center align-middle' },
+                    {
+                        data: 'position.name', title: 'Pozisyon', className: 'text-center align-middle', render: function (data, type, row) {
+                            if (data == "Admin") {
+                                return `<a class="btn btn-sm btn-primary" style="pointer-events: none; opacity: 0.5;">Admin</a>`;
+                            } else if (data == "Garson") {
+                                return `<a class="btn btn-sm btn-warning text-black" style="pointer-events: none; opacity: 0.5; background-color: teal-300;">Garson</a>`;
+                            } else if (data == "Kasiyer") {
+                                return `<a class="btn btn-sm btn-warning text-black" style="pointer-events: none; opacity: 0.5; background-color: teal-300;">Kasiyer</a>`;
+                            } else if (data == "Aşçı") {
+                                return `<a class="btn btn-sm btn-warning text-black" style="pointer-events: none; opacity: 0.5; background-color: teal-300;">Aşçı</a>`;
+                            }
+                        }
+                    },
+                    {
+                        data: 'isActive', title: 'Durum', className: 'text-center align-middle', render: function (data, type, row) {
+                            if (data) {
+                                return `<a class="btn btn-sm btn-success" style="opacity: 0.8;" onclick="changeStatus('${row.id}')">Aktif</a>`
+                            } else {
+                                return `<a class="btn btn-sm btn-dark" style="opacity: 0.8;" onclick="changeStatus('${row.id}')">Pasif</a>`
+                            }
+                        }
+                    },
+                    {
+                        data: 'id', title: 'İşlemler', className: 'text-center align-middle', render: function (data) {
+                            return `<a href="javascript:void(0);" onclick="editUser('${data}')" class="px-3 text-primary" > <i class="uil uil-pen font-size-18"> </i></a ><a href="javascript:void(0);" onclick="deleteUser('${data}')" class="px-3 text-danger" > <i class="uil uil-trash-alt font-size-18"> </i></a >`
+                        }
+                    }
+                ],
+                autoWidth: true
+            });
+        }
+        function changeStatus(userId) {
+            Swal.fire({
+                title: 'Kullancının Durumunu Değişecektir !',
+                text: "Emin misiniz ? ",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Değiştir!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/AppUser/ChangeStatus',
+                        data: { id: userId },
+                        success: function () {
+                            Swal.fire(
+                                'Başarılı!',
+                                'Durum Değişti',
+                                'success'
+                            );
+                            DataTable.ajax.reload(null, false);
+                        },
+                        error: function () {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Durum Değiştirme İşlemi Başarısız!',
+                                text: 'Bir şeyler yanlış gitti!'
+                            });
+                        }
+                    });
+                }
+            });
+        }
+        function addUser() {
+            $("#modalTitleId").text("Kullanıcı Ekle");
+            $("#btnSave").text("Ekle").removeClass("btn-success").addClass("btn-primary");
+            $(".txt").val("");
+            $("#ddlPositonSelect").val(2);
+            $("#btnSave").off();
+            $("#btnSave").click(function () {
+
+                $.ajax({
+                    type: "Post",
+                    url: "/AppUser/Create",
+                    data: {
+                        userName: $("#txtUserName").val(),
+                        firstName: $("#txtFirstName").val(),
+                        lastName: $("#txtLastName").val(),
+                        positionId: $("#ddlPositonSelect").val(),
+                    },
+                    success: function () {
+                        DataTable.ajax.reload(null, false);
+                        toastr.success("Kullanıcı başarıyla eklendi");
+                        $("#modal").modal("hide");
+                    },
+                    error: function (res) {
+                        if (res.responseText === "Bu kullanıcı adı zaten kullanılıyor.") {
+                            toastr.error("Bu kullanıcı adı zaten kullanılıyor.");
+                        } else {
+                            toastr.error("Kullanıcı eklenirken hata oluştu");
+                        }
+                    }
+                })
+            });
+            $("#modal").modal("show");
+        }
+        function editUser(id) {
+            $("#modalTitleId").text("Kullanıcı Düzenle");
+            $("#btnSave").text("Güncelle").removeClass("btn-primary").addClass("btn-success");
+            $(".txt").val("");
+            $("#ddlPositonSelect").val("");
+            $("#modal").modal('show');
+
+            $.ajax({
+                type: 'GET',
+                url: 'AppUser/GetById',
+                data: { id: id },
+                success: function (res) {
+                    $("#txtUserName").val(res.userName);
+                    $("#txtFirstName").val(res.firstName);
+                    $("#txtLastName").val(res.lastName);
+                    $("#ddlPositonSelect").val(res.positionId);
+                    $('#modal').modal('show');
+
+                    $("#btnSave").off().click(function () {
+
+                        $.ajax({
+                            type: 'PATCH',
+                            url: '/AppUser/Update',
+                            data: {
+                                id: id,
+                                userName: $("#txtUserName").val(),
+                                firstName: $("#txtFirstName").val(),
+                                lastName: $("#txtLastName").val(),
+                                positionId: $("#ddlPositonSelect option:selected").val()
+                            },
+                            success: function (res) {
+                                $("#modal").modal('hide');
+                                toastr.success("Kullanıcı başarıyla Güncellendi");
+                                DataTable.ajax.reload(null, false);
+                            },
+                            error: function (res) {
+                                if (res.responseText === "Bu kullanıcı adı zaten kullanılıyor.") {
+                                    toastr.error("Bu kullanıcı adı zaten kullanılıyor.");
+                                }else if (res.responseText === "Kullanıcı bulunamadı.") {
+                                    toastr.error("Kullanıcı bulunamadı.");
+                                }else {
+                                    toastr.error("Kullanıcı güncellenirken bir hata oluştu");
+                                }
+                            }
+                        });
+                    });
+                },
+                Error: function () {
+                    toastr.error("Kullanıcı bulunamadı");
+                }
+            });
+        }
+        function deleteUser(id) {
+            Swal.fire({
+                title: 'Emin misiniz ?',
+                text: "Silme işlemi geri alınamayacak !",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Evet, sil !',
+                cancelButtonText: 'Vazgeç'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: "DELETE",
+                        url: "AppUser/Delete",
+                        data: { id: id },
+                        success: function (res) {
+                            DataTable.ajax.reload(null, false);
+                            Swal.fire(
+                                'Silindi!'
+                            )
+                        }
+                    })
+                }
+            })
+        }
+        function fillDdlPositionSelect() {
+            $.ajax({
+                type: "GET",
+                url: "/Position/GetAll",
+                success: function (res) {
+                    for (var i = 1 ; i < res.length; i++) {
+                        $("#ddlPositonSelect").append(new Option(res[i].name, res[i].id, false, false));
+                    }
+                }
+            });
+        }
+
+    </script>
+    <!-- Datatable Jquery js -->
+    <script src="~/assets/libs/datatables.net/js/cdn.datatables.net_1.13.6_js_jquery.dataTables.js"></script>
+    }
+
+

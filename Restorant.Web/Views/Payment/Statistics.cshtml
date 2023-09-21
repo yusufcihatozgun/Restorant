@@ -1,0 +1,241 @@
+﻿<head>
+    <title></title>
+</head>
+<div class="container">
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <form class="form-inline">
+                        <!-- İlk Grafik Formu -->
+                    </form>
+                    <div id="daiySalesChart"></div>
+                </div>
+                <div class="card-footer text-center">
+                    <p class="h4">Günlük Satış Miktarları (TL)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <form class="form-inline">
+                        <!-- İkinci Grafik Formu -->
+                    </form>
+                    <div id="receivedOrderCountChart"></div>
+                </div>
+                <div class="card-footer text-center">
+                    <p class="h4">Kullanıcıların Aldığı Sipariş Adetleri</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script>
+
+        $(document).ready(function () {
+            Waves.init();
+            setupDateChangeListeners();
+            fillReceivedOrderCountByUsersCart();
+            fillDailySalesChart();
+        });
+
+        function setupDateChangeListeners() {
+            $("#daiySalesChartstartDate, #daiySalesChartendDate").off().on("change", function () {
+                var startDate = $("#daiySalesChartstartDate").val();
+                var endDate = $("#daiySalesChartendDate").val();
+
+                if (startDate != "" && endDate != "" && startDate > endDate) {
+                    toastr.error("Başlangıç tarihi, bitiş tarihinden sonra olamaz.");
+                } else if (startDate != "" && endDate != "") {
+                    fillDailySalesChartWithCalendar(startDate, endDate);
+                }
+            });
+
+            $("#ReceivedOrderCountChartstartDate, #ReceivedOrderCountChartendDate").off().on("change", function () {
+                var startDate = $("#ReceivedOrderCountChartstartDate").val();
+                var endDate = $("#ReceivedOrderCountChartendDate").val();
+
+                if (startDate != "" && endDate != "" && startDate > endDate) {
+                    toastr.error("Başlangıç tarihi, bitiş tarihinden sonra olamaz.");
+                } else if (startDate != "" && endDate != "") {
+                    fillReceivedOrderCountByUsersCartWithCalendar(startDate, endDate);
+                }
+            });
+
+        }
+
+        function fillReceivedOrderCountByUsersCartWithCalendar(startDate, endDate) {
+            $.ajax({
+                type: "Get",
+                url: "/Order/GetReceivedOrderCountByUsers",
+                data:{
+                    startDate : startDate,
+                    endDate: endDate
+                },
+                success: function (res) {
+                    var userNames = Object.keys(res);
+                    var orderCounts = Object.values(res);
+
+                    var options = {
+                        series: orderCounts,
+                        labels: userNames,
+                        chart: {
+                            type: 'polarArea'
+                        },
+                        stroke: {
+                            colors: ['#fff']
+                        },
+                        fill: {
+                            opacity: 0.8
+                        },
+                        legend: {
+                            position: 'bottom'
+                        },
+                        responsive: [{
+                            breakpoint: 480,
+                            options: {
+                                chart: {
+                                    width: 200
+                                },
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }]
+                    };
+
+                    var chart = new ApexCharts(document.querySelector("#receivedOrderCountChart"), options);
+                    chart.render();
+
+                }
+            })
+
+
+
+        }
+
+        function fillReceivedOrderCountByUsersCart() {
+            $.ajax({
+                type: "Get",
+                url: "/Order/GetReceivedOrderCountByUsers",
+                success: function (res) {
+                    var userNames = Object.keys(res);
+                    var orderCounts = Object.values(res);
+
+                    var options = {
+                        series: orderCounts,
+                        labels: userNames,
+                        chart: {
+                            type: 'polarArea',
+                        },
+                        stroke: {
+                            colors: ['#fff']
+                        },
+                        fill: {
+                            opacity: 0.8
+                        },
+                        legend: {
+                            position: 'bottom'
+                        },
+                        responsive: [{
+                            breakpoint: 480,
+                            options: {
+                                chart: {
+                                    width: 200
+                                },
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }]
+                    };
+                    var chart = new ApexCharts(document.querySelector("#receivedOrderCountChart"), options);
+                    chart.render();
+                }
+            })
+        }
+
+        function fillDailySalesChartWithCalendar(startDate, endDate) {
+
+            $("#daiySalesChart").empty();
+            console.log("fonksiyona girdi")
+            $.ajax({
+                type: "Post",
+                url: "/Payment/GetDailySalesData",
+                data: {
+                    startDate: startDate,
+                    endDate: endDate
+                },
+                success: function (res) {
+                    var dateValues = Object.keys(res).map(function (dateStr) {
+                        return new Date(dateStr).toLocaleDateString();
+                    });
+
+                    var amounts = Object.values(res);
+                    var options = {
+                        chart: {
+                            type: 'line'
+                        },
+                        series: [{
+                            name: 'sales',
+                            data: amounts
+                        }],
+                        xaxis: {
+                            categories: dateValues
+                        }
+                    }
+                    var chart = new ApexCharts(document.querySelector("#daiySalesChart"), options);
+
+                    chart.render();
+
+                },
+                error: function (res) {
+                    var message = res.responseText;
+                    toastr.error(message);
+                }
+            })
+
+        }
+
+        function fillDailySalesChart() {
+            $.ajax({
+                type: "Post",
+                url: "/Payment/GetDailySalesData",
+                success: function (res) {
+
+                    var dateValues = Object.keys(res).map(function (dateStr) {
+                        return new Date(dateStr).toLocaleDateString();
+                    });
+
+                    var amounts = Object.values(res);
+
+                    var options = {
+                        chart: {
+                            type: 'line'
+                        },
+                        series: [{
+                            name: 'sales',
+                            data: amounts
+                        }],
+                        xaxis: {
+                            categories: dateValues
+                        }
+                    }
+                    var chart = new ApexCharts(document.querySelector("#daiySalesChart"), options);
+
+                    chart.render();
+
+
+                }
+            })
+        }
+
+    </script>
+    <script src="~/assets/libs/apexcharts/npm_apexcharts.js"></script>
+
+    }
+
+

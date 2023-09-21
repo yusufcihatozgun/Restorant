@@ -1,0 +1,200 @@
+﻿@section Styles{
+    <link href="~/assets/css/cdn.datatables.net_1.13.6_css_jquery.dataTables.css" rel="stylesheet" type="text/css" />
+}
+
+<div class="modal fade" id="modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" role="dialog" aria-labelledby="modalTitleId" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title " id="modalTitleId">Kullanıcı Ekle </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="quantityInput">Masa No :</label>
+                    <input type="number" class="form-control txt" id="txtTableName" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="quantityInput">Kapasite :</label>
+                    <input type="number" class="form-control txt" id="txtCapacity" min="1">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                <a id="btnSave" class="btn btn-primary">Kaydet</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*Datatables*@
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Masa Listesi</h5>
+            <a class="btn btn-success waves-effect waves-light" onclick="addTable()">Masa Ekle</a>
+        </div>
+        <div class="card-body">
+            <table id="datatable" class="dt-responsive nowrap cell-border hover" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+            </table>
+        </div>
+    </div>
+</div>
+
+<head>
+    <title>Masa Yönetimi</title>
+</head>
+
+@section Scripts{
+    <script>
+        var DataTable;
+        $(document).ready(function () {
+            fillDataTable();
+            Waves.init();
+        });
+
+        function fillDataTable() {
+            DataTable = $('#datatable').DataTable({
+                ajax: '/Table/GetAll',
+                columns: [
+                    { data: 'id', title: 'ID', className: 'text-center align-middle' },
+                    { data: 'name', title: 'Masa No', className: 'text-center align-middle' },
+                    { data: 'capacity', title: 'Kapasite', className: 'text-center align-middle' },
+                    {
+                        data: 'id', title: 'İşlemler', className: 'text-center align-middle', render: function (data) {
+                            return `<a href="javascript:void(0);" onclick="editTable('${data}')" class= "px-3 text-primary" > <i class="uil uil-pen font-size-18"> </i></a ><a href="javascript:void(0);" onclick="deleteTable('${data}')" class= "px-3 text-danger" > <i class="uil uil-trash-alt font-size-18"> </i></a >`
+                        }
+                    }
+                ],
+                autoWidth: true
+            });
+
+        }
+
+        function addTable() {
+            $("#modalTitleId").text("Masa Ekle");
+            $("#btnSave").text("Ekle").removeClass("btn-success").addClass("btn-primary");
+            $(".txt").val("");
+
+            $.ajax({
+                type: "GET",
+                url: "/Table/GetAll",
+                success: function (res) {
+                    var tableName = parseInt(res.data[res.data.length - 1].name) + 1;
+                    console.log(tableName);
+                    $("#txtTableName").val(tableName);
+
+                    $("#btnSave").off().click(function () {
+                        $.ajax({
+                            type: "POST",
+                            url: "/Table/Create",
+                            data: {
+                                name: $("#txtTableName").val(),
+                                capacity: $("#txtCapacity").val()
+                            },
+                            success: function (res) {
+                                $(".txt").val("");
+                                $("#modal").modal("hide");
+                                DataTable.ajax.reload(null, false);
+                                toastr.success("Masa başarıyla eklendi");
+                            },
+                            error: function (res) {
+                                if (res.responseText === "Bu masa numarası zaten kullanılıyor.") {
+                                    toastr.error("Bu masa numarası zaten kullanılıyor.");
+                                } else {
+                                    toastr.error("Masa eklenirken bir hata oluştu");
+                                }
+                            }
+                        });
+                    });
+                }
+            });
+            $("#modal").modal("show");
+
+
+        }
+
+        function editTable(id) {
+
+            $("#modalTitleId").text("Masa Düzenle")
+            $("#btnSave").text("Kaydet").removeClass("btn-primary").addClass("btn-success");
+            $(".txt").val("");
+
+            $.ajax({
+                type: "GET",
+                url: "/Table/GetById",
+                data: { id: id },
+                success: function (res) {
+                    $("#txtTableName").val(res.name);
+                    $("#txtCapacity").val(res.capacity);
+
+                    $("#btnSave").off().click(function () {
+
+                        $.ajax({
+                            type: "POST",
+                            url: "/Table/Update",
+                            data: {
+                                id: id,
+                                name: $("#txtTableName").val(),
+                                capacity: $("#txtCapacity").val()
+                            },
+                            success: function () {
+                                $("#modal").modal("hide");
+                                DataTable.ajax.reload(null, false);
+                                toastr.success("Masa başarıyla güncellendi");
+                            },
+                            error: function (res) {
+                                if (res.responseText === "Bu masa numarası zaten kullanılıyor.") {
+                                    toastr.error("Bu masa numarası zaten kullanılıyor.");
+                                }
+                                else if (res.responseText === "Masa Bulunamadı") {
+                                    toastr.error("Masa Bulunamadı");
+                                }
+                                else {
+                                    toastr.error("Masa güncellenirken bir hata oluştu");
+                                }
+                            }
+                        });
+                    });
+                    $("#modal").modal("show");
+                },
+                error: function () {
+                    toastr.error("Masa bulunamadı");
+                }
+            });
+        }
+
+        function deleteTable(id) {
+            Swal.fire({
+                title: 'Emin misiniz ?',
+                text: "Silme işlemi geri alınamayacak !",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Evet, sil !',
+                cancelButtonText: 'Vazgeç'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: "DELETE",
+                        url: "Table/Delete",
+                        data: { id: id },
+                        success: function (res) {
+                            DataTable.ajax.reload(null, false);
+                            Swal.fire(
+                                'Silindi!'
+                            )
+                        }
+                    })
+                }
+            })
+        }
+
+    </script>
+    <!-- Datatable Jquery js -->
+    <script src="~/assets/libs/datatables.net/js/cdn.datatables.net_1.13.6_js_jquery.dataTables.js"></script>
+    }
+
+
+

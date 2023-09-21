@@ -1,0 +1,337 @@
+﻿@section Styles{
+    <link href="~/assets/css/cdn.datatables.net_1.13.6_css_jquery.dataTables.css" rel="stylesheet" type="text/css" />
+}
+
+<head>
+    <title>Alt Kategori Yönetimi</title>
+</head>
+
+<div class="modal fade" id="modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" role="dialog" aria-labelledby="modalTitleId" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title " id="modalTitleId">Alt Kategori Ekle </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <div class="mb-3">
+                        <label for="txtCategoryName">Alt Kategori Adı:</label>
+                        <input type="text" class="form-control txt" id="txtSubCategoryName" min="1">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ddlSubCategorySelect">Ekleneceği Kategori:</label>
+                        <select class="form-select select2" id="ddlCategorySelect">
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                <a id="btnSave" class="btn btn-primary">Kaydet</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*Datatables*@
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Alt Kategori Listesi</h5>
+            <a class="btn btn-success waves-effect waves-light" onclick="addSubCategory()">Kategori Ekle</a>
+        </div>
+        <div class="card-body">
+            <table id="datatable" class="dt-responsive nowrap cell-border hover" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+@section Scripts{
+    <script>
+
+        $(document).ready(function () {
+            fillDataTable();
+            Waves.init();
+
+            $("#modal").on('hidden.bs.modal', function (e) {
+                // Modal kapanınca giriş alanının readonly durumunu kaldır
+                if ($("#txtSubCategoryName").prop("readonly")) {
+                    $("#txtSubCategoryName").removeAttr("readonly");
+                }
+            });
+        });
+
+        function fillDdlCategorySelect() {
+            $.ajax({
+                type: 'GET',
+                url: '/Category/GetAll',
+                success: function (res) {
+                    $('#ddlCategorySelect').empty();
+                    for (var item of res.data) {
+                        $('#ddlCategorySelect').append(new Option(item.name, item.id, false, false));
+                    }
+                }
+            });
+        }
+
+        function fillDataTable() {
+            DataTable = $('#datatable').DataTable({
+                ajax: '/SubCategory/GetAll',
+                columns: [
+                    { data: 'id', title: 'ID', className: 'text-center align-middle' },
+                    { data: 'name', title: 'Adı', className: 'text-center align-middle' },
+                    {
+                        data: 'category', title: 'Bağlı bulunduğu Kategori', className: 'text-center align-middle', render: function (data, type, row) {
+                            if (!data) {
+                                return `<button href="javascript:void(0);" class="btn btn-success" onclick="connectSubCategoryToCategory('${row.id}')"> <i class="fas fa-plus"></i> </button>`;
+                            }
+                            else {
+                                return `
+                                        <table>
+                                            <tr>
+                                                <td class="align-middle text-center" style="width:80%;">${data.name}</td>
+                                                <td class="align-middle text-center" style="width:20%;">
+                                                    <a class="btn btn-danger btn-sm" onclick="disconnectSubCategoryFromCategory('${row.id}')">Kaldır</a>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>`;
+                            }
+                        }
+                    },
+                    {
+                        data: 'id', title: 'İşlemler', className: 'text-center align-middle', render: function (data, type, row) {
+                            return `
+                                        <a href="javascript:void(0);" onclick="editSubCategory('${row.id}')" class= "px-3 text-primary" >
+                                            <i class="uil uil-pen font-size-18"> </i>
+                                        </a >
+                                        <a href="javascript:void(0);" onclick="deleteSubCategory('${row.id}')" class= "px-3 text-danger" >
+                                            <i class="uil uil-trash-alt font-size-18"> </i>
+                                        </a >`
+                        }
+                    }
+                ],
+                autoWidth: true
+            });
+        }
+
+        function addSubCategory() {
+            $("#modalTitleId").text("Alt Kategori Ekle");
+            $("#btnSave").text("Ekle").removeClass("btn-success").addClass("btn-primary");
+            $(".txt").val("");
+            $("#ddlCategorySelect").empty();
+
+            fillDdlCategorySelect('ddlCategorySelect');
+            $("#ddlCategorySelect").select2({ width: '100%', dropdownParent: $('#modal') });
+
+
+            $("#btnSave").off().click(function () {
+
+                $.ajax({
+                    type: "Post",
+                    url: "/SubCategory/Create",
+                    data: {
+                        categoryId: $("#ddlCategorySelect option:selected").val(),
+                        name: $("#txtSubCategoryName").val()
+                    },
+                    success: function (res) {
+                        $(".txt").val("");
+                        $("#ddlCategorySelect").val("");
+                        $("#modal").modal("hide");
+                        DataTable.ajax.reload(null, false);
+                        toastr.success("Alt Kategori başarıyla eklendi");
+                    },
+                    error: function (res) {
+                        if (res.responseText === "Bu alt kategori adı zaten kullanıyor.") {
+                            toastr.error("Bu alt kategori adı zaten kullanıyor.");
+                        }
+                        else {
+                            toastr.error("Alt kategori eklenirken bir hata oluştu");
+                        }
+                    }
+                })
+            });
+            $("#modal").modal("show");
+        }
+
+        function editSubCategory(id) {
+
+            $("#modalTitleId").text("Alt Kategori Düzenle")
+            $("#btnSave").text("Kaydet").removeClass("btn-primary").addClass("btn-success");
+            $(".txt").val("");
+            $("#ddlCategorySelect").empty();
+
+            fillDdlCategorySelect();
+            $("#ddlCategorySelect").select2({ width: '100%', dropdownParent: $('#modal') });
+
+
+            $.ajax({
+                type: "GET",
+                url: "/SubCategory/GetById",
+                data: { id: id },
+                success: function (res) {
+                    $("#txtSubCategoryName").val(res.name);
+                    $("#ddlCategorySelect").val(res.categoryId).trigger("change");
+
+                    $("#btnSave").off().click(function () {
+
+                        $.ajax({
+                            type: "PATCH",
+                            url: "/SubCategory/Update",
+                            data: {
+                                id: id,
+                                name: $("#txtSubCategoryName").val(),
+                                categoryId: $("#ddlCategorySelect option:selected").val()
+                            },
+                            success: function () {
+                                $("#modal").modal("hide");
+                                $("#ddlCategorySelect option:selected").val("");
+                                DataTable.ajax.reload(null, false);
+                                toastr.success("Kategori başarıyla güncellendi");
+                            },
+                            error: function (res) {
+                                if (res.responseText === "Bu alt kategori adı zaten kullanılıyor.") {
+                                    toastr.error("Bu alt kategori adı zaten kullanılıyor.");
+                                }
+                                else if (res.responseText === "Kategori Bulunamadı") {
+                                    toastr.error("Kategori Bulunamadı");
+                                }
+                                else {
+                                    toastr.error("Kategori güncellenirken bir hata oluştu");
+                                }
+                            }
+                        });
+                    });
+                    $("#modal").modal("show");
+                },
+                error: function () {
+                    toastr.error("Kategori bulunamadı");
+                }
+            });
+        }
+
+        function deleteSubCategory(id) {
+            Swal.fire({
+                title: 'Emin misiniz ?',
+                text: "Silme işlemi geri alınamayacak !",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Evet, sil !',
+                cancelButtonText: 'Vazgeç'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: "DELETE",
+                        url: "SubCategory/Delete",
+                        data: { id: id },
+                        success: function (res) {
+                            DataTable.ajax.reload(null, false);
+                            Swal.fire(
+                                'Silindi!'
+                            )
+                        },
+                        error: function (res) {
+                            if (res.responseText === "Alt kategori bulunamadı.") {
+                                toastr.error("Alt kategori bulunamadı.");
+                            }
+                            else {
+                                toastr.error("Alt kategori silinirken hata oluştu.")
+                            }
+                        }
+                    })
+                }
+            })
+        }
+
+        function connectSubCategoryToCategory(subCategoryId) {
+            $("#modalTitleId").text("Alt Kategoriyi Kategoriye Bağla");
+            $("#btnSave").text("Bağla").removeClass("btn-success").addClass("btn-primary");
+            $(".txt").val("");
+            $("#ddlCategorySelect").empty();
+
+            fillDdlCategorySelect();
+            $("#ddlCategorySelect").select2({ width: '100%', dropdownParent: $('#modal') });
+
+
+            $.ajax({
+                type: "Get",
+                url: "/SubCategory/GetById",
+                data: { id: subCategoryId },
+                success: function (res) {
+                    $("#txtSubCategoryName").val(res.name);
+                    $("#txtSubCategoryName").attr("readonly", true);
+                }
+            });
+            $("#btnSave").off().click(function () {
+
+                $.ajax({
+                    type: 'PATCH',
+                    url: '/SubCategory/Update',
+                    data: {
+                        id: subCategoryId,
+                        categoryId: $("#ddlCategorySelect option:selected").val(),
+                        name: $("#txtSubCategoryName").val()
+                    },
+                    success: function (res) {
+                        $("#txtSubCategoryName").removeAttr("readonly");
+                        $("#modal").modal('hide');
+                        toastr.success("Kayıt başarıyla eklendi");
+                        DataTable.ajax.reload(null, false);
+                    }
+                })
+            });
+
+            $('#modal').modal('show');
+
+        }
+
+        function disconnectSubCategoryFromCategory(id) {
+            Swal.fire({
+                title: 'Emin misiniz ?',
+                text: "Silme işlemi geri alınamayacak !",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Evet, sil !',
+                cancelButtonText: 'Vazgeç'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: "PATCH",
+                        url: "SubCategory/DisconnectSubCategoryFromCategory",
+                        data: { id: id },
+                        success: function (res) {
+                            DataTable.ajax.reload(null, false);
+                            Swal.fire(
+                                'Silindi!'
+                            )
+                        },
+                        error: function (res) {
+                            if (res.responseText === "Alt kategori bulunamadı.") {
+                                toastr.error("Alt kategori bulunamadı.");
+                            }
+                            else {
+                                toastr.error("Alt kategori silinirken hata oluştu.")
+                            }
+                        }
+                    })
+                }
+            })
+        }
+
+    </script>
+    <!-- Datatable Jquery js -->
+    <script src="~/assets/libs/datatables.net/js/cdn.datatables.net_1.13.6_js_jquery.dataTables.js"></script>
+    }
+
+
+

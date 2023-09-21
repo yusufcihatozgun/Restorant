@@ -1,0 +1,336 @@
+﻿@section Styles{
+    <link href="~/assets/css/cdn.datatables.net_1.13.6_css_jquery.dataTables.css" rel="stylesheet" type="text/css" />
+}
+
+<!--Product modal-->
+<div class="modal fade" id="modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" role="dialog" aria-labelledby="modalTitleId" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title " id="modalTitleId">Ürün Ekle </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                <div class="container">
+
+                    <div class="mb-3">
+                        <label class="form-label">Ürün Adı</label>
+                        <input type="text" id="txtName" class="form-control txt" maxlength="40" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <input type="text" id="txtDescription" class="form-control txt" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">0,5 Porsiyon Fiyatı</label>
+                        <input type="number" step="0.01" id="txtPrice05Portion" class="form-control txt" maxlength="11">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">1 Porsiyon Fiyatı</label>
+                        <input type="number" step="0.01" id="txtPrice1Portion" class="form-control txt" maxlength="11">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">1,5 Porsiyon Fiyatı</label>
+                        <input type="number" step="0.01" id="txtPrice15Portion" class="form-control txt" maxlength="11">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">2 Porsiyon Fiyatı</label>
+                        <input type="number" step="0.01" id="txtPrice2Portion" class="form-control txt" maxlength="11">
+                    </div>
+                    <div id="ddlSubCategory" class="mb-3">
+                        <label class="form-label">Kategori Adı</label>
+                        <select id="ddlSubCategorySelect" class="form-control select2">
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                <a href="javascript:void(0);" id="btnSave" class="btn btn-primary">Kaydet</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--image modal-->
+<div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalLabel">Fotoğraf Ekle</h5>
+            </div>
+            <form id="imageForm" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <input type="file" id="imageInput" name="image" accept="image/*">
+                    <img id="previewImage" src="" alt="Fotoğraf önizleme" style="max-width: 100%; display: none;">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="closeImageModal" data-dismiss="modal">Kapat</button>
+                    <button type="submit" class="btn btn-primary" id="saveImage">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@*Datatables*@
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Ürün Listesi</h5>
+            <a class="btn btn-success waves-effect waves-light" onclick="addProduct()">Ürün Ekle</a>
+        </div>
+        <div class="card-body">
+            <table id="datatable" class="dt-responsive nowrap cell-border hover" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+            </table>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts{
+    <script>
+        var DataTable;
+        $(document).ready(function () {
+            fillDataTable();
+            fillDdlSubCategorySelect();
+            Waves.init();
+        });
+
+        function fillDataTable() {
+            DataTable = $('#datatable').DataTable({
+                ajax: '/Product/GetAllForDatatables',
+                columns: [
+                    { data: 'id', title: 'ID', className: 'text-center align-middle' },
+                    { data: 'name', title: 'Ad', className: 'text-center align-middle' },
+                    { data: 'description', title: 'Açıklama', className: 'text-center align-middle' },
+                    {
+                        data: null, title: 'Porsiyon - Fiyat', className: 'text-center align-middle', render: function (data, type, row) {
+                            var a05 = data.portion05Price ? data.portion05Price.toFixed(2) + " TL" : "-";
+                            var a1 = data.portion1Price ? data.portion1Price.toFixed(2) + " TL": "-";
+                            var a15 = data.portion15Price ? data.portion15Price.toFixed(2) + " TL" : "-";
+                            var a2 = data.portion2Price ? data.portion2Price.toFixed(2) + " TL" : "-";
+
+                            var table = `
+                                    <table class="table table-bordered text-center align-middle mt-3">
+                                        <tbody class="">
+                                            <tr>
+                                                <td style="width: 30%;"><b>0,5</b></td>
+                                                <td class="fw-bold text-primary" style="width: 70%;">${a05}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width: 30%;"><b>1</b></td>
+                                                <td class="fw-bold text-primary" style="width: 70%;">${a1}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width: 30%;"><b>1,5</td>
+                                                <td class="fw-bold text-primary" style="width: 70%;">${a15}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width: 30%;"><b>2</b></td>
+                                                <td class="fw-bold text-primary" style="width: 70%;">${a2}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>`;
+
+                            return table;
+                        }
+                    },
+                    { data: 'subCategory', title: 'Kategorisi', className: 'text-center align-middle' },
+                    {
+                        data: 'id', title: 'Resim Düzenle', className: 'text-center align-middle', render: function (data) {
+                            return `<a href="javascript:void(0);" onclick="editImage('${data}')" class="px-3 text-primary"><i class="uil uil-image-edit font-size-22"></i></a>`;
+                        }
+                    },
+                    {
+                        data: 'id', title: 'İşlemler', className: 'text-center align-middle', render: function (data) {
+                            return `<a href="javascript:void(0);" onclick="editProduct('${data}')" class="px-3 text-primary"><i class="uil uil-pen font-size-18"> </i></a><a href="javascript:void(0);" onclick="deleteProduct('${data}')" class="px-3 text-danger"><i class="uil uil-trash-alt font-size-18"></i></a>`;
+                        }
+                    }
+                ],
+                autoWidth: true,
+                scrollX: true
+            });
+        }
+
+        function fillDdlSubCategorySelect() {
+            $.ajax({
+                type: "GET",
+                url: "/SubCategory/GetAll",
+                success: function (res) {
+                    $("#ddlSubCategorySelect").empty();
+                    for (var item of res.data) {
+                        $('#ddlSubCategorySelect').append(new Option(item.name, item.id, false, false));
+                    }
+                }
+            });
+        }
+
+        function addProduct() {
+            $("#modalTitleId").text("Ürün Ekle");
+            $("#btnSave").text("Ekle").removeClass("btn-success").addClass("btn-primary");
+            $(".txt").val("");
+            $("#ddlPositonSelect").val("");
+            $("#modal").modal("show");
+
+            $("#btnSave").off().click(function () {
+
+                $.ajax({
+                    type: "Post",
+                    url: "/Product/Create",
+                    data: {
+                        name: $("#txtName").val(),
+                        description: $("#txtDescription").val(),
+                        portion05Price: $("#txtPrice05Portion").val().replace(".", ","),
+                        portion1Price: $("#txtPrice1Portion").val().replace(".", ","),
+                        portion15Price: $("#txtPrice15Portion").val().replace(".", ","),
+                        portion2Price: $("#txtPrice2Portion").val().replace(".", ","),
+                        subCategoryId: $("#ddlSubCategorySelect").val()
+                    },
+                    success: function () {
+                        $(".txt").val("");
+                        $("#ddlSubCategorySelect").val("");
+                        $("#modal").modal("hide");
+                        DataTable.ajax.reload(null, false);
+                        toastr.success("Ürün başarıyla eklendi");
+                    },
+                    error: function (res) {
+                        if (res.responseText === "Bu ürün adı zaten kullanılıyor.") {
+                            toastr.error("Bu ürün adı zaten kullanılıyor.");
+                        }
+                        else if (res.responseText === "Ürün Bulunamadı") {
+                            toastr.error("Ürün Bulunamadı");
+                        }
+                        else {
+                            toastr.error("Ürün güncellenirken bir hata oluştu");
+                        }
+                    }
+                })
+            });
+        }
+
+        function editProduct(id) {
+            $("#modalTitleId").text("Ürün Düzenle");
+            $("#btnSave").text("Kaydet").removeClass("btn-primary").addClass("btn-success");
+            $(".txt").val("");
+            $("#ddlPositonSelect").val("");
+
+            $.ajax({
+                type: "GET",
+                url: "/Product/GetById",
+                data: { id: id },
+                success: function (res) {
+                    $("#txtName").val(res.name);
+                    $("#txtDescription").val(res.description);
+                    $("#txtPrice05Portion").val(res.portion05Price),
+                    $("#txtPrice1Portion").val(res.portion1Price),
+                    $("#txtPrice15Portion").val(res.portion15Price),
+                    $("#txtPrice2Portion").val(res.portion2Price),
+                    $("#ddlSubCategorySelect option:selected").val(res.subCategoryId).trigger("change");
+
+                    $("#modal").modal("show");
+                    $("#btnSave").off().click(function () {
+
+                        $.ajax({
+                            type: "POST",
+                            url: "/Product/Update",
+                            data: {
+                                id: id,
+                                name: $("#txtName").val(),
+                                description: $("#txtDescription").val(),
+                                portion05Price: $("#txtPrice05Portion").val().replace(".", ","),
+                                portion1Price: $("#txtPrice1Portion").val().replace(".", ","),
+                                portion15Price: $("#txtPrice15Portion").val().replace(".", ","),
+                                portion2Price: $("#txtPrice2Portion").val().replace(".", ","), 
+                                subCategoryId: $("#ddlSubCategorySelect").val()
+                            },
+                            success: function () {
+                                $("#modal").modal("hide");
+                                DataTable.ajax.reload(null, false);
+                                toastr.success("Ürün başarıyla güncellendi");
+                            },
+                            error: function (res) {
+                                if (res.responseText === "Bu ürün adı zaten kullanılıyor.") {
+                                    toastr.error("Bu ürün adı zaten kullanılıyor.");
+                                }
+                                else if (res.responseText === "Ürün Bulunamadı") {
+                                    toastr.error("Ürün Bulunamadı");
+                                }
+                                else {
+                                    toastr.error("Ürün güncellenirken bir hata oluştu");
+                                }
+                            }
+                        })
+                    });
+                },
+                error: function () {
+                    toastr.error("Ürün bulunamadı");
+                }
+            });
+        }
+
+        function deleteProduct(id) {
+            Swal.fire({
+                title: 'Emin misiniz ?',
+                text: "Silme işlemi geri alınamayacak !",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Evet, sil !',
+                cancelButtonText: 'Vazgeç'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: "DELETE",
+                        url: "Product/Delete",
+                        data: { id: id },
+                        success: function (res) {
+                            DataTable.ajax.reload(null, false);
+                            Swal.fire(
+                                'Silindi!'
+                            )
+                        }
+                    })
+                }
+            })
+        }
+
+        function editImage(id) {
+            $("#imageModal").modal('show');
+            $("#imageInput").val("");
+            $('#imageForm').off();
+            $('#closeImageModal').on("click", function () {
+                $("#imageModal").modal('hide');
+            });
+
+            // Kaydet butonuna basılınca resmi form aracılığıyla sunucuya gönderme
+            $('#imageForm').on('submit', function (event) {
+                event.preventDefault();
+
+                // Resmi sunucuya gönderme işlemleri burada gerçekleştirilmeli
+                // Formu sunucuya gönderip resmi images klasörüne ve veritabanına kaydedin
+
+                var formData = new FormData(this);
+                formData.append("id", id);
+                formData.append("image", $("#imageInput").prop("files")[0], $("#imageInput").prop("files")[0].name); // Resmi form verisine ekleyin
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/Product/SaveImage',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        console.log(formData);
+                        $("#imageModal").modal('hide');
+                        toastr.success("Fotoğraf başarıyla eklendi");
+                    }
+                });
+            });
+        }
+
+    </script>
+    <!-- Datatable Jquery js -->
+    <script src="~/assets/libs/datatables.net/js/cdn.datatables.net_1.13.6_js_jquery.dataTables.js"></script>
+}

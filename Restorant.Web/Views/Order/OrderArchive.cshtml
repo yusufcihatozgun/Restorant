@@ -1,0 +1,180 @@
+﻿@section Styles{
+    <link href="~/assets/css/cdn.datatables.net_1.13.6_css_jquery.dataTables.css" rel="stylesheet" type="text/css" />
+}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Adisyon Arşivi</h5>
+        </div>
+        <div class="card-body">
+            <table id="datatable" class="dt-responsive nowrap cell-border hover" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h4>Adisyon No : <span id="adisyonId"></span></h4>
+                <button type="button" class="btn btn-close bg-white border border-white" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body bg-light">
+                <div class="card">
+                    <div class="card-body">
+                        <table id="orderTable" class="table table-bordered text-center">
+                            <thead>
+                                <tr>
+                                    <th>Sipariş No</th>
+                                    <th>Ürün Adı</th>
+                                    <th>Porsiyon</th>
+                                    <th>Adet</th>
+                                    <th>Birim Fiyat</th>
+                                    <th>Toplam</th>
+                                </tr>
+                            </thead>
+                            <tbody id="order-container">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts{
+    <script>
+        var dataTable;
+        $(document).ready(function () {
+            fillDataTable();
+            Waves.init();
+        });
+
+        function fillOrderProducts(id) {
+            $("#order-container").empty();
+            $.ajax({
+                type: "GET",
+                url: "/Order/GetAllWithOrderProduct",
+                data: { id: id },
+                success: function (res) {
+
+                    var productName = "";
+                    var orderProductId = "";
+                    var portion = 0;
+                    var quantity = 0;
+                    var totalPrice = 0;
+                    var grandTotal = 0;
+                    res.data.orderProducts.forEach(function (orderProduct) {
+                        productName = orderProduct.product.name;
+                        orderProductId = orderProduct.id;
+                        portion = orderProduct.portion;
+                        if (portion == "0,5") {
+                            price = orderProduct.product.portion05Price;
+                        }
+                        else if (portion == "1") {
+                            price = orderProduct.product.portion1Price;
+                        }
+                        else if (portion == "1,5") {
+                            price = orderProduct.product.portion15Price;
+                        }
+                        else if (portion == "2") {
+                            price = orderProduct.product.portion2Price;
+                        }
+
+
+                        quantity = orderProduct.quantity;
+                        totalPrice = price * quantity;
+                        grandTotal += totalPrice;
+
+                        $("#order-container").append(`
+                        <tr>
+                            <td>${orderProductId}</td>
+                            <td class="text-start align-middle">${productName}</td>
+                            <td>${portion}</td>
+                            <td>${quantity}</td>
+                            <td>${price} TL</td>
+                            <td>${totalPrice.toFixed(2)} TL</td>
+                        </tr>
+                        `);
+                    });
+
+                    $("#orderTable tfoot").remove();
+                    $("#orderTable").append(`
+                    <tfoot>
+                        <tr>
+                            <td colspan="5" class="fs-6"><b>Ara Toplam : </b></td>
+                            <td class="fs-6"><b>${grandTotal.toFixed(2)}</b><b> TL</b></td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" class="fs-6"><b>KDV Dahil : </b></td>
+                            <td class="fs-6"><b>0 TL</b></td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" class="fs-6"><b>Genel Toplam<sub>(KDV Dahil)</sub> :</b></td>
+                            <td class="fs-6"><b><span id="grandTotal">${grandTotal.toFixed(2)}</span></b><b> TL</b></td>
+                        </tr>
+                    </tfoot>
+                    `);
+                    fillTotalBalance(id);
+                }
+            });
+        }
+
+        function fillTotalBalance(orderId) {
+            var totalPaidAmount = 0;
+
+            $.ajax({
+                type: "GET",
+                url: "/Order/GetAllPayments",
+                data: { id: orderId },
+                success: function (res) {
+                    res.data[0].payments.forEach(function (payment) {
+                        totalPaidAmount += payment.amount;
+                    });
+
+                    var grandTotal = parseFloat($("#grandTotal").text());
+
+                    var totalBalance = grandTotal - totalPaidAmount;
+
+                    $("#totalBalance").val(totalBalance.toFixed(2).replace(".", ","));
+                }
+            });
+        }
+
+        function showDetails(orderId) {
+            $("#adisyonId").text(`${orderId}`);
+            fillOrderProducts(orderId);
+            $("#modal").modal("show");
+            assignFunctionToButtons(orderId, id);
+
+        }
+
+        function fillDataTable() {
+            datatable = $("#datatable").dataTable({
+                order: [[0, 'desc']],
+                ajax: "/Order/GetAll",
+                columns: [
+                    { data: "id", title: "ID", className: "text-center align-middle", orderSequence: ["desc", "asc"] },
+                    { data: "table", title: "Masa No", className: "text-center align-middle" },
+                    { data: "appUser", title: "Siparişi Alan", className: "text-center align-middle" },
+                    { data: "status", title: "Sipariş Durumu", className: "text-center align-middle" },
+                    { data: "totalPrice", title: "Toplam Tutar", className: "text-center align-middle" },
+                    {
+                        data: "id", title: "", className: "text-center align-middle", render: function (data, type, row) {
+                            return `<a href="javascript:void(0);" class="btn btn-primary btn-sm" onclick="showDetails(${row.id})">Detay Göster</a> `;
+                        }
+                    }
+                ]
+            });
+
+        }
+    </script>
+    <script src="~/assets/libs/datatables.net/js/cdn.datatables.net_1.13.6_js_jquery.dataTables.js"></script>
+}
